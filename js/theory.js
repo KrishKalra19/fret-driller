@@ -8,10 +8,29 @@ FD.theory = (() => {
   const LETTER_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   const MAJOR_IV = [0, 2, 4, 5, 7, 9, 11];
 
-  // String 0 is the high E (drawn on top, like tab). MIDI numbers, standard tuning.
-  const TUNING = [64, 59, 55, 50, 45, 40];
-  const STRING_NAMES = ['high E', 'B', 'G', 'D', 'A', 'low E'];
-  const STRING_SHORT = ['e', 'B', 'G', 'D', 'A', 'E'];
+  // String 0 is the highest string (drawn on top, like tab). MIDI numbers, standard tuning.
+  const INSTRUMENTS = {
+    guitar: {
+      id: 'guitar', label: 'Guitar',
+      tuning: [64, 59, 55, 50, 45, 40],
+      names: ['high E', 'B', 'G', 'D', 'A', 'low E'],
+      short: ['e', 'B', 'G', 'D', 'A', 'E'],
+      widths: [1.1, 1.4, 1.8, 2.3, 2.8, 3.3],
+    },
+    bass: {
+      id: 'bass', label: 'Bass',
+      tuning: [43, 38, 33, 28],
+      names: ['G', 'D', 'A', 'E'],
+      short: ['G', 'D', 'A', 'E'],
+      widths: [2.4, 3.0, 3.7, 4.4],
+    },
+  };
+  let inst = INSTRUMENTS.guitar;
+  let TUNING = inst.tuning;
+  const setInstrument = id => { inst = INSTRUMENTS[id] || INSTRUMENTS.guitar; TUNING = inst.tuning; };
+  const count = () => TUNING.length;
+  const low = () => TUNING.length - 1;
+  const allStrings = () => TUNING.map(() => true);
 
   // Root spellings used for key names, depending on whether the scale is major- or minor-flavoured.
   const MAJOR_ROOTS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -141,9 +160,9 @@ FD.theory = (() => {
     const sc = SCALES[scaleId];
     const set = new Set(sc.iv.map(i => mod12(root + i)));
     const n = notesPerString(sc);
-    let midi = TUNING[5] + f0;
+    let midi = TUNING[low()] + f0;
     const out = [];
-    for (let s = 5; s >= 0; s--) {
+    for (let s = low(); s >= 0; s--) {
       for (let k = 0; k < n; k++) {
         if (out.length) { do { midi++; } while (!set.has(mod12(midi))); }
         const f = midi - TUNING[s];
@@ -158,7 +177,7 @@ FD.theory = (() => {
     const sc = SCALES[scaleId];
     const out = [];
     sc.iv.forEach((iv, deg) => {
-      const base = mod12(root + iv - TUNING[5]);
+      const base = mod12(root + iv - TUNING[low()]);
       for (const f0 of [base, base + 12]) {
         const pattern = npsPattern(root, scaleId, f0);
         if (!pattern) continue;
@@ -175,7 +194,7 @@ FD.theory = (() => {
   function boxPattern(root, scaleId, from, span) {
     const set = new Set(SCALES[scaleId].iv.map(i => mod12(root + i)));
     const cells = [];
-    for (let s = 0; s < 6; s++) {
+    for (let s = 0; s < count(); s++) {
       for (let f = from; f < from + span && f <= 24; f++) {
         const midi = midiAt(s, f);
         if (set.has(pc(midi))) cells.push({ s, f, midi });
@@ -214,7 +233,13 @@ FD.theory = (() => {
   }
 
   return {
-    SHARP, FLAT, TUNING, STRING_NAMES, STRING_SHORT, SCALES, LETTER_PC, INTERVALS,
+    SHARP, FLAT, SCALES, LETTER_PC, INTERVALS, INSTRUMENTS,
+    get TUNING() { return TUNING; },
+    get STRING_NAMES() { return inst.names; },
+    get STRING_SHORT() { return inst.short; },
+    get STRING_WIDTHS() { return inst.widths; },
+    get instrument() { return inst; },
+    setInstrument, count, low, allStrings,
     mod12, pc, midiAt, isNatural, name, promptSpelling, pretty, octaveOf,
     parseNote, parseSequence, rootOptions, scaleInfo, notesPerString,
     npsPattern, npsPositions, boxPattern, orderSequence,

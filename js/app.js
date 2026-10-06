@@ -5,6 +5,7 @@
   const board = new FD.Fretboard($('board'));
   const PAGES = ['explore', 'stats', 'settings'];
   let current = null;
+  let currentTab = null;
 
   const ctx = {
     board,
@@ -34,6 +35,8 @@
 
   function show(tab) {
     if (!FD.drills[tab] && !PAGES.includes(tab)) tab = 'find';
+    currentTab = tab;
+    document.querySelectorAll('#inst button').forEach(b => b.classList.toggle('active', b.dataset.inst === S.instrument()));
     if (current && current.unmount) current.unmount();
     current = null;
     board.onCell = null;
@@ -65,6 +68,12 @@
   }
 
   document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => { b.blur(); show(b.dataset.tab); }));
+  document.querySelectorAll('#inst button').forEach(b => b.addEventListener('click', () => {
+    b.blur();
+    if (b.dataset.inst === S.instrument()) return;
+    S.setInstrument(b.dataset.inst);
+    show(currentTab);
+  }));
   $('hud-reset').addEventListener('click', e => { e.currentTarget.blur(); UI.hud.reset(); });
 
   document.addEventListener('keydown', e => {

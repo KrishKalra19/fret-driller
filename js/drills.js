@@ -17,7 +17,7 @@
   function rangeCells() {
     const st = S.settings();
     const out = [];
-    for (let s = 0; s < 6; s++) {
+    for (let s = 0; s < T.count(); s++) {
       if (!st.strings[s]) continue;
       for (let f = st.minFret; f <= st.maxFret; f++) out.push({ s, f, midi: T.midiAt(s, f) });
     }
@@ -420,7 +420,7 @@
 
     hear() {
       if (!this.notes) return;
-      let prev = 60;
+      let prev = T.TUNING[T.low()] + 20;
       const midis = this.notes.map(n => {
         let m = n.midi;
         if (m == null) {
@@ -473,7 +473,7 @@
       this.seq = T.orderSequence(this.pattern, o.dir, o.seq);
       const maxF = Math.max(0, ...this.pattern.map(p => p.f));
       const { board } = this.ctx;
-      board.configure({ minFret: 0, strings: [true, true, true, true, true, true], maxFret: Math.min(24, Math.max(S.settings().maxFret, maxF + 1)) });
+      board.configure({ minFret: 0, strings: T.allStrings(), maxFret: Math.min(24, Math.max(S.settings().maxFret, maxF + 1)) });
       board.setBox(o.shape === 'box' ? { from: o.boxStart, to: o.boxStart + o.boxSpan - 1 } : null);
     },
 

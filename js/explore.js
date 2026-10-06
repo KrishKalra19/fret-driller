@@ -91,9 +91,9 @@
       const o = this.o, st = S.settings(), { info, cmp, board } = this;
       board.box = this.box;
       board.marks.clear();
-      board.configure({ minFret: 0, maxFret: 24, leftHanded: st.leftHanded, strings: [true, true, true, true, true, true] });
+      board.configure({ minFret: 0, maxFret: 24, leftHanded: st.leftHanded, strings: T.allStrings() });
 
-      for (let s = 0; s < 6; s++) {
+      for (let s = 0; s < T.count(); s++) {
         for (let f = 0; f <= 24; f++) {
           const p = T.pc(T.midiAt(s, f));
           const inA = info.set.has(p), inB = cmp && cmp.set.has(p);
@@ -145,7 +145,7 @@
       if (this.pattern) up = this.pattern.map(c => c.midi);
       else if (this.box) up = T.boxPattern(o.root, o.scale, this.box.from, o.boxSpan).map(c => c.midi);
       else {
-        let m = 40;
+        let m = T.TUNING[T.low()];
         while (T.pc(m) !== o.root) m++;
         up = [];
         for (let x = m; x <= m + 12; x++) if (this.info.set.has(T.pc(x))) up.push(x);

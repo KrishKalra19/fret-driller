@@ -3,7 +3,6 @@
   const NS = 'http://www.w3.org/2000/svg';
   const INLAYS = [3, 5, 7, 9, 15, 17, 19, 21];
   const DOUBLE = [12, 24];
-  const STRING_W = [1.1, 1.4, 1.8, 2.3, 2.8, 3.3];
   let uid = 0;
 
   function el(tag, attrs, parent) {
@@ -17,7 +16,7 @@
     constructor(svg) {
       this.svg = svg;
       this.id = ++uid;
-      this.cfg = { minFret: 0, maxFret: 12, leftHanded: false, strings: [true, true, true, true, true, true] };
+      this.cfg = { minFret: 0, maxFret: 12, leftHanded: false, strings: FD.theory.allStrings() };
       this.marks = new Map();
       this.markEls = new Map();
       this.box = null;
@@ -47,7 +46,8 @@
       const k = (W - nutX - padR) / sum;
       const fx = [nutX];
       for (let f = 1; f <= maxFret; f++) fx[f] = fx[f - 1] + k * Math.pow(r, f - 1);
-      const gap = (H - top - bottom) / 5;
+      const n = FD.theory.count();
+      const gap = (H - top - bottom) / (n - 1);
       const sy = s => top + s * gap;
       const X = x => (leftHanded ? W - x : x);
       this.geo = { fx, sy, X, gap, padL, nutX };
@@ -62,15 +62,16 @@
       el('stop', { offset: '50%', 'stop-color': '#3c2a1d' }, grad);
       el('stop', { offset: '100%', 'stop-color': '#47311f' }, grad);
 
-      const yTop = sy(0) - gap * 0.5, yBot = sy(5) + gap * 0.5;
+      const yTop = sy(0) - gap * 0.5, yBot = sy(n - 1) + gap * 0.5;
+      const mid = (sy(0) + sy(n - 1)) / 2;
       el('rect', { ...this.span(nutX, fx[maxFret]), y: yTop, height: yBot - yTop, fill: `url(#wood${this.id})`, rx: 3 }, svg);
 
       for (let f = 1; f <= maxFret; f++) {
         const cx = X((fx[f - 1] + fx[f]) / 2);
-        if (INLAYS.includes(f)) el('circle', { class: 'fb-inlay', cx, cy: (sy(2) + sy(3)) / 2, r: 6.5 }, svg);
+        if (INLAYS.includes(f)) el('circle', { class: 'fb-inlay', cx, cy: mid, r: 6.5 }, svg);
         if (DOUBLE.includes(f)) {
-          el('circle', { class: 'fb-inlay', cx, cy: (sy(1) + sy(2)) / 2, r: 6.5 }, svg);
-          el('circle', { class: 'fb-inlay', cx, cy: (sy(3) + sy(4)) / 2, r: 6.5 }, svg);
+          el('circle', { class: 'fb-inlay', cx, cy: mid - gap, r: 6.5 }, svg);
+          el('circle', { class: 'fb-inlay', cx, cy: mid + gap, r: 6.5 }, svg);
         }
       }
 
@@ -91,10 +92,10 @@
       }
       el('line', { class: 'fb-nut', x1: X(nutX), x2: X(nutX), y1: yTop - 1, y2: yBot + 1 }, svg);
 
-      for (let s = 0; s < 6; s++) {
+      for (let s = 0; s < n; s++) {
         el('line', {
           class: 'fb-str' + (strings[s] ? '' : ' off'),
-          x1: X(padL + 6), x2: X(fx[maxFret]), y1: sy(s), y2: sy(s), 'stroke-width': STRING_W[s],
+          x1: X(padL + 6), x2: X(fx[maxFret]), y1: sy(s), y2: sy(s), 'stroke-width': FD.theory.STRING_WIDTHS[s],
         }, svg);
         const t = el('text', { class: 'fb-label' + (strings[s] ? '' : ' off'), x: X(padL - 14), y: sy(s) }, svg);
         t.textContent = FD.theory.STRING_SHORT[s];
@@ -107,7 +108,7 @@
       }
 
       if (this.heat) {
-        for (let s = 0; s < 6; s++) {
+        for (let s = 0; s < n; s++) {
           for (let f = 0; f <= maxFret; f++) {
             const h = this.heat(s, f);
             if (!h) continue;
@@ -125,7 +126,7 @@
         temp: el('g', { class: 'temp' }, svg),
         cells: el('g', { class: 'cells' }, svg),
       };
-      for (let s = 0; s < 6; s++) {
+      for (let s = 0; s < n; s++) {
         for (let f = 0; f <= maxFret; f++) {
           const [a, b] = this.bounds(f);
           el('rect', { class: 'cell', 'data-s': s, 'data-f': f, ...this.span(a, b), y: sy(s) - gap / 2, height: gap }, this.layers.cells);

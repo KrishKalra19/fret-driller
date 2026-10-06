@@ -10,13 +10,13 @@
     mount(el) {
       el.innerHTML = `
         <div class="page-head">
-          <h2>Your stats</h2>
+          <h2>Your ${T.instrument.label.toLowerCase()} stats</h2>
           <div class="seg" id="stats-mode">
             <button data-mode="find">Find the note</button>
             <button data-mode="name">Name the note</button>
           </div>
           <span class="spacer"></span>
-          <button class="btn danger" id="stats-reset">Reset all stats</button>
+          <button class="btn danger" id="stats-reset">Reset ${T.instrument.label.toLowerCase()} stats</button>
         </div>
         <div class="cards" id="stats-cards"></div>
         <div class="board-wrap"><svg class="board" id="stats-board"></svg></div>
@@ -29,7 +29,7 @@
       this.board = new FD.Fretboard(el.querySelector('#stats-board'));
       el.querySelectorAll('#stats-mode button').forEach(b => b.addEventListener('click', () => { this.mode = b.dataset.mode; this.render(); }));
       el.querySelector('#stats-reset').addEventListener('click', () => {
-        if (confirm('Reset all practice stats and best times? This cannot be undone.')) { S.resetStats(); this.render(); }
+        if (confirm(`Reset all ${T.instrument.label.toLowerCase()} practice stats and best times? This cannot be undone.`)) { S.resetStats(); this.render(); }
       });
       this.render();
     },
@@ -88,7 +88,7 @@
         return row;
       };
 
-      const range = group('Fret range', 'Which frets the note drills use. Sequences pick positions inside this range.');
+      const range = group(`Fret range (${T.instrument.label.toLowerCase()})`, 'Which frets the note drills use. Sequences pick positions inside this range.');
       const frets = Array.from({ length: 25 }, (_, i) => i);
       const minSel = UI.select(range, 'Lowest fret', frets.slice(0, 22).map(f => ({ value: f, label: f === 0 ? '0 (open)' : String(f) })), st.minFret, v => {
         S.setSetting('minFret', v);
@@ -99,7 +99,7 @@
         if (S.settings().minFret > v - 3) { S.setSetting('minFret', v - 3); minSel.value = String(v - 3); }
       });
 
-      const strings = group('Strings', 'Only drill the strings you switch on.');
+      const strings = group(`Strings (${T.instrument.label.toLowerCase()})`, 'Only drill the strings you switch on.');
       T.STRING_NAMES.forEach((nm, s) => UI.toggle(strings, nm, st.strings[s], v => {
         const arr = S.settings().strings.slice();
         arr[s] = v;
@@ -124,10 +124,10 @@
       w.innerHTML = '<span>Volume</span>';
       const vol = document.createElement('input');
       vol.type = 'range'; vol.min = 0; vol.max = 1; vol.step = 0.05; vol.value = st.volume;
-      vol.addEventListener('change', () => { S.setSetting('volume', +vol.value); FD.audio.pluck(57); });
+      vol.addEventListener('change', () => { S.setSetting('volume', +vol.value); FD.audio.pluck(T.TUNING[1] + 2); });
       w.appendChild(vol);
       sound.appendChild(w);
-      UI.button(sound, '▶ Test', () => FD.audio.sequence([52, 57, 62, 67, 71, 76], 0.12));
+      UI.button(sound, '▶ Test', () => FD.audio.sequence(T.TUNING.slice().reverse().map(m => m + 12), 0.12));
     },
   };
 

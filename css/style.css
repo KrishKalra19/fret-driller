@@ -51,6 +51,8 @@ header.top {
   background-position: center, center 25%, center 50%, center 75%;
   background-repeat: no-repeat;
 }
+.seg.inst button { padding: 5px 11px; font-size: 14px; }
+.seg.inst button.active { background: var(--accent); color: var(--accent-ink); }
 .tabs { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
 .tabs .spacer { flex: 1; }
 .tabs button {
