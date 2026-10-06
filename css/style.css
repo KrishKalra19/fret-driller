@@ -62,6 +62,17 @@ header.top {
 .tabs button:hover { color: var(--text); background: var(--panel); }
 .tabs button.active { color: var(--accent-ink); background: var(--accent); }
 
+.qotd {
+  display: flex; align-items: baseline; gap: 6px 12px; flex-wrap: wrap;
+  max-width: 1280px; margin: 0 auto; padding: 10px 56px 10px 24px; position: relative;
+  color: var(--muted); font-size: 14px; border-bottom: 1px solid #1d2026;
+}
+.qotd-tag { color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
+.qotd q { color: var(--text); font-style: italic; }
+.qotd-src::before { content: "– "; }
+.qotd-x { position: absolute; right: 18px; top: 7px; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 6px; }
+.qotd-x:hover { color: var(--text); background: var(--panel); }
+
 main { max-width: 1280px; margin: 0 auto; padding: 22px 24px 48px; }
 
 /* ---------- prompt + hud ---------- */
