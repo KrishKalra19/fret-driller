@@ -64,14 +64,17 @@ header.top {
 
 .qotd {
   display: flex; align-items: baseline; gap: 6px 12px; flex-wrap: wrap;
-  max-width: 1280px; margin: 0 auto; padding: 10px 56px 10px 24px; position: relative;
+  max-width: 1280px; margin: 0 auto; padding: 10px 220px 10px 24px; position: relative;
   color: var(--muted); font-size: 14px; border-bottom: 1px solid #1d2026;
 }
 .qotd-tag { color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
 .qotd q { color: var(--text); font-style: italic; }
 .qotd-src::before { content: "– "; }
-.qotd-x { position: absolute; right: 18px; top: 7px; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 6px; }
-.qotd-x:hover { color: var(--text); background: var(--panel); }
+.qotd-btns { position: absolute; right: 14px; top: 6px; display: flex; gap: 2px; }
+.qotd-btn { background: none; border: 0; color: var(--muted); cursor: pointer; font: inherit; font-size: 13px; padding: 4px 8px; border-radius: 6px; }
+.qotd-btn:hover { color: var(--text); background: var(--panel); }
+
+@media (max-width: 760px) { .qotd { padding: 10px 16px 40px; } .qotd-btns { top: auto; bottom: 6px; } }
 
 main { max-width: 1280px; margin: 0 auto; padding: 22px 24px 48px; }
 
