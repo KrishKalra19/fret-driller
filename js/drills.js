@@ -448,7 +448,7 @@
     mount(ctx) {
       this.ctx = ctx;
       this.o = S.opts('scales', this.defaults);
-      ctx.hint('Play the pattern in order, root notes are gold. <kbd>Space</kbd> restart · <kbd>H</kbd> hear it. Try <b>From memory</b> once the shape sticks.');
+      ctx.hint('Play the pattern in order, root notes glow. <kbd>Space</kbd> restart · <kbd>H</kbd> hear it. Try <b>From memory</b> once the shape sticks.');
       this.build();
     },
 

@@ -7,6 +7,7 @@ FD.store = (() => {
     sound: true,
     volume: 0.7,
     advance: 'normal',
+    side: 'jedi',
   };
   // Fret range and strings depend on the instrument, so each instrument keeps its own.
   const PER_INSTRUMENT = ['minFret', 'maxFret', 'strings'];
@@ -19,6 +20,7 @@ FD.store = (() => {
   data.stats = data.stats || {};
   data.best = data.best || {};
   data.inst = data.inst || {};
+  data.xp = data.xp || {};
 
   // Migrate pre-bass saves, where everything belonged to the guitar.
   if (data.stats.find || data.stats.name) data.stats = { guitar: data.stats };
@@ -32,6 +34,16 @@ FD.store = (() => {
   FD.theory.setInstrument(data.instrument);
 
   const id = () => data.instrument;
+
+  // Lifetime correct answers per instrument drive the rank. Older saves get a head start from their stats.
+  for (const inst of ['guitar', 'bass']) {
+    if (data.xp[inst] != null) continue;
+    let est = 0;
+    for (const mode of Object.values(data.stats[inst] || {})) {
+      for (const st of Object.values(mode.notes || {})) est += Math.round(st.total * (st.n ? st.ok / st.n : 0));
+    }
+    data.xp[inst] = est;
+  }
   const instSettings = () => {
     const cur = Object.assign(instDefaults(), data.inst[id()]);
     if (cur.strings.length !== FD.theory.count()) cur.strings = FD.theory.allStrings();
@@ -67,6 +79,8 @@ FD.store = (() => {
     },
 
     instrument: id,
+    xp: () => data.xp[id()] || 0,
+    addXp() { data.xp[id()] = (data.xp[id()] || 0) + 1; save(); return data.xp[id()]; },
     setInstrument(v) { data.instrument = v; FD.theory.setInstrument(v); save(); },
 
     opts(id, defaults) {

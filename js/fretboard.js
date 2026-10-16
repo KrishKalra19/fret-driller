@@ -56,15 +56,16 @@
       svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
       svg.textContent = '';
 
+      // Hologram board: a dark translucent plate with faint scan lines; colours come from CSS.
       const defs = el('defs', {}, svg);
-      const grad = el('linearGradient', { id: `wood${this.id}`, x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
-      el('stop', { offset: '0%', 'stop-color': '#4b3424' }, grad);
-      el('stop', { offset: '50%', 'stop-color': '#3c2a1d' }, grad);
-      el('stop', { offset: '100%', 'stop-color': '#47311f' }, grad);
+      const scan = el('pattern', { id: `scan${this.id}`, width: 6, height: 6, patternUnits: 'userSpaceOnUse' }, defs);
+      el('line', { class: 'fb-scan', x1: 0, y1: 0.5, x2: 6, y2: 0.5 }, scan);
 
       const yTop = sy(0) - gap * 0.5, yBot = sy(n - 1) + gap * 0.5;
       const mid = (sy(0) + sy(n - 1)) / 2;
-      el('rect', { ...this.span(nutX, fx[maxFret]), y: yTop, height: yBot - yTop, fill: `url(#wood${this.id})`, rx: 3 }, svg);
+      const plate = { ...this.span(nutX, fx[maxFret]), y: yTop, height: yBot - yTop, rx: 4 };
+      el('rect', { class: 'fb-wood', ...plate }, svg);
+      el('rect', { ...plate, fill: `url(#scan${this.id})` }, svg);
 
       for (let f = 1; f <= maxFret; f++) {
         const cx = X((fx[f - 1] + fx[f]) / 2);

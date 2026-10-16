@@ -34,13 +34,14 @@
   UI.hud.el = $('hud');
 
   function show(tab) {
-    if (!FD.drills[tab] && !PAGES.includes(tab)) tab = 'find';
+    if (!FD.drills[tab] && !PAGES.includes(tab)) tab = 'explore';
     currentTab = tab;
     document.querySelectorAll('#inst button').forEach(b => b.classList.toggle('active', b.dataset.inst === S.instrument()));
     if (current && current.unmount) current.unmount();
     current = null;
     board.onCell = null;
-    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('button[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    FD.theme.renderRank();
     const drill = FD.drills[tab];
     $('drill-view').hidden = !drill;
     PAGES.forEach(p => { $(p + '-view').hidden = tab !== p; });
@@ -67,7 +68,7 @@
     history.replaceState(null, '', '#' + tab);
   }
 
-  document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => { b.blur(); show(b.dataset.tab); }));
+  document.querySelectorAll('button[data-tab]').forEach(b => b.addEventListener('click', () => { b.blur(); show(b.dataset.tab); }));
   document.querySelectorAll('#inst button').forEach(b => b.addEventListener('click', () => {
     b.blur();
     if (b.dataset.inst === S.instrument()) return;

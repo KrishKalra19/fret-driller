@@ -67,6 +67,34 @@
 
     // Books (spoiler-free)
     { q: 'Per aspera ad astra. Through hardships to the stars.', who: 'Red Rising motto', src: 'Red Rising', year: 2014 },
+    // Star Wars
+    { q: "Do. Or do not. There is no try.", who: "Yoda", src: "The Empire Strikes Back", year: 1980 },
+    { q: "Luminous beings are we, not this crude matter.", who: "Yoda", src: "The Empire Strikes Back", year: 1980 },
+    { q: "Size matters not.", who: "Yoda", src: "The Empire Strikes Back", year: 1980 },
+    { q: "Never tell me the odds!", who: "Han Solo", src: "The Empire Strikes Back", year: 1980 },
+    { q: "Impressive. Most impressive.", who: "Darth Vader", src: "The Empire Strikes Back", year: 1980 },
+    { q: "I find your lack of faith disturbing.", who: "Darth Vader", src: "A New Hope", year: 1977 },
+    { q: "In my experience, there's no such thing as luck.", who: "Obi-Wan Kenobi", src: "A New Hope", year: 1977 },
+    { q: "I have a bad feeling about this.", who: "Han Solo", src: "A New Hope", year: 1977 },
+    { q: "Help me, Obi-Wan Kenobi. You're my only hope.", who: "Leia", src: "A New Hope", year: 1977 },
+    { q: "Great, kid. Don't get cocky.", who: "Han Solo", src: "A New Hope", year: 1977 },
+    { q: "It's a trap!", who: "Admiral Ackbar", src: "Return of the Jedi", year: 1983 },
+    { q: "Always pass on what you have learned.", who: "Yoda", src: "Return of the Jedi", year: 1983 },
+    { q: "Your focus determines your reality.", who: "Qui-Gon Jinn", src: "The Phantom Menace", year: 1999 },
+    { q: "Fear is the path to the dark side.", who: "Yoda", src: "The Phantom Menace", year: 1999 },
+    { q: "Hello there.", who: "Obi-Wan Kenobi", src: "Revenge of the Sith", year: 2005 },
+    { q: "Unlimited power!", who: "Palpatine", src: "Revenge of the Sith", year: 2005 },
+    { q: "You were the chosen one!", who: "Obi-Wan Kenobi", src: "Revenge of the Sith", year: 2005 },
+    { q: "Train yourself to let go of everything you fear to lose.", who: "Yoda", src: "Revenge of the Sith", year: 2005 },
+    { q: "Rebellions are built on hope.", who: "Jyn Erso", src: "Rogue One", year: 2016 },
+    { q: "I am one with the Force. The Force is with me.", who: "Chirrut Îmwe", src: "Rogue One", year: 2016 },
+    { q: "The greatest teacher, failure is.", who: "Yoda", src: "The Last Jedi", year: 2017 },
+    { q: "Let the past die. Kill it, if you have to.", who: "Kylo Ren", src: "The Last Jedi", year: 2017 },
+    { q: "Hope is like the sun. If you only believe in it when you can see it, you'll never make it through the night.", who: "Leia", src: "The Last Jedi", year: 2017 },
+    { q: "This is the way.", who: "Din Djarin", src: "The Mandalorian", year: "2019–2023" },
+    { q: "The Force will be with you. Always.", who: "Obi-Wan Kenobi", src: "A New Hope", year: 1977 },
+    { q: "Judge me by my size, do you?", who: "Yoda", src: "The Empire Strikes Back", year: 1980 },
+    { q: "Stay on target.", who: "Gold Five", src: "A New Hope", year: 1977 },
   ];
 
   const HIDE_KEY = 'fretdriller.qotdHidden';

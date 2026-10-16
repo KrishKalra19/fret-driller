@@ -93,8 +93,13 @@ FD.ui = (() => {
       this.best = Math.max(this.best, this.streak);
       if (ms != null) { this.times.push(ms); if (this.times.length > 20) this.times.shift(); }
       this.render();
+      if (FD.theme) FD.theme.onHit(this.streak);
     },
-    miss() { this.misses++; this.streak = 0; this.render(); },
+    miss() {
+      const lost = this.streak;
+      this.misses++; this.streak = 0; this.render();
+      if (FD.theme) FD.theme.onMiss(lost);
+    },
     render() {
       if (!this.el) return;
       const tot = this.hits + this.misses;

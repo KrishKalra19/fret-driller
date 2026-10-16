@@ -111,6 +111,10 @@
         { value: 'sharp', label: 'Sharps (C♯, F♯)' }, { value: 'flat', label: 'Flats (D♭, G♭)' }, { value: 'mixed', label: 'Both, at random' },
       ], st.spelling, v => S.setSetting('spelling', v));
 
+      const theme = group('Theme', 'Pick your side of the Force. Ranks and messages change with it.');
+      UI.select(theme, 'Side', [{ value: 'jedi', label: 'Jedi' }, { value: 'sith', label: 'Sith' }], st.side, v => FD.theme.setSide(v));
+      UI.button(theme, '▶ Replay opening crawl', () => FD.theme.playCrawl());
+
       const feel = group('Feel');
       UI.toggle(feel, 'Left-handed fretboard', st.leftHanded, v => S.setSetting('leftHanded', v));
       UI.select(feel, 'After a correct answer', [

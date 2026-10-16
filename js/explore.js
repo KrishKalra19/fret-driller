@@ -18,7 +18,7 @@
         <div class="ex-legend" id="ex-legend"></div>
         <div class="board-wrap"><svg class="board" id="ex-board" aria-label="Fretboard explorer"></svg></div>
         <div class="panel"><div class="options" id="ex-options"></div>
-          <div class="hint">Click any fret to hear it and see its role in the scale. Gold dots are the root.</div></div>`;
+          <div class="hint">Click any fret to hear it and see its role in the scale. Glowing dots are the root.</div></div>`;
       this.el = el;
       this.board = new FD.Fretboard(el.querySelector('#ex-board'));
       this.board.onCell = (s, f) => this.clickCell(s, f);
