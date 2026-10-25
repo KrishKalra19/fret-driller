@@ -91,5 +91,8 @@ FD.audio = (() => {
     midis.forEach((m, i) => pluck(m, i * gap));
   }
 
-  return { pluck, buzz, sequence };
+  // The backing track shares this context and routes through the master volume.
+  const context = () => (ensure() ? { ctx, master } : null);
+
+  return { pluck, buzz, sequence, context };
 })();

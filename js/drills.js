@@ -448,7 +448,7 @@
     mount(ctx) {
       this.ctx = ctx;
       this.o = S.opts('scales', this.defaults);
-      ctx.hint('Play the pattern in order, root notes glow. <kbd>Space</kbd> restart · <kbd>H</kbd> hear it. Try <b>From memory</b> once the shape sticks.');
+      ctx.hint('Play the pattern in order, root notes glow. Click a note in the strip to jump there. <kbd>Space</kbd> restart · <kbd>H</kbd> hear it. Try <b>From memory</b> once the shape sticks.');
       this.build();
     },
 
@@ -526,7 +526,7 @@
       clearTimeout(this.timer);
       const { board } = this.ctx;
       board.clear();
-      this.i = 0; this.mistakes = 0; this.tStart = null; this.tl = now(); this.done = false; this.nextCell = null;
+      this.i = 0; this.mistakes = 0; this.tStart = null; this.tl = now(); this.done = false; this.nextCell = null; this.jumped = false;
       if (!this.seq.length) { this.ctx.prompt('Hmm', 'No notes in this pattern'); return; }
       if (this.o.view !== 'memory') {
         for (const p of this.pattern) board.mark(p.s, p.f, { cls: this.baseCls(p), label: this.label(p), anim: false });
@@ -562,10 +562,27 @@
       const items = this.seq.slice(from, from + 14).map((p, k) => ({
         text: T.pretty(this.info.names.get(T.pc(p.midi))),
         state: from + k < this.i ? 'done' : from + k === this.i ? 'cur' : 'todo',
+        i: from + k,
       }));
       if (from + 14 < this.seq.length) items.push({ text: `+${this.seq.length - from - 14}`, state: 'more' });
       if (from > 0) items.unshift({ text: `${from}…`, state: 'more' });
       this.ctx.strip(items);
+    },
+
+    // Clicking a note in the sequence strip jumps the run there.
+    onStrip(k) {
+      if (!this.seq.length || k < 0 || k >= this.seq.length) return;
+      clearTimeout(this.timer);
+      this.done = false;
+      this.jumped = true;
+      this.i = k;
+      this.tl = now();
+      this.markNext();
+      this.renderStrip();
+      const t = this.seq[k];
+      this.ctx.board.flash(t.s, t.f, { cls: 'target', label: this.label(t) }, 900);
+      A.pluck(t.midi);
+      this.ctx.sub(`Jumped to note ${k + 1} of ${this.seq.length}: ${T.pretty(this.info.names.get(T.pc(t.midi)))}, ${T.STRING_NAMES[t.s]} string fret ${t.f}`);
     },
 
     onCell(s, f) {
@@ -613,7 +630,9 @@
       const k = this.bestKey();
       const best = S.best(k);
       let note = '';
-      if (!this.mistakes) {
+      if (this.jumped) {
+        note = ' · you jumped ahead, so no best time';
+      } else if (!this.mistakes) {
         if (!best || ms < best) { S.setBest(k, ms); note = best ? ` · new best (was ${secs(best)})` : ' · first clean run!'; }
         else note = ` · best ${secs(best)}`;
       }

@@ -3,8 +3,9 @@
   const S = FD.store, UI = FD.ui;
   const $ = id => document.getElementById(id);
   const board = new FD.Fretboard($('board'));
-  const PAGES = ['explore', 'stats', 'settings'];
+  const PAGES = ['explore', 'jam', 'stats', 'settings'];
   let current = null;
+  let currentPage = null;
   let currentTab = null;
 
   const ctx = {
@@ -27,7 +28,7 @@
       const el = $('strip');
       el.hidden = !items;
       if (!items) return;
-      el.innerHTML = items.map(it => `<span class="chip ${it.state}">${it.text}${it.sub !== '' && it.sub != null ? `<sub>${it.sub}</sub>` : ''}</span>`).join('');
+      el.innerHTML = items.map(it => `<span class="chip ${it.state}"${it.i != null ? ` data-i="${it.i}" title="Jump here"` : ''}>${it.text}${it.sub !== '' && it.sub != null ? `<sub>${it.sub}</sub>` : ''}</span>`).join('');
     },
     hint(html) { $('hint').innerHTML = html; },
   };
@@ -38,7 +39,9 @@
     currentTab = tab;
     document.querySelectorAll('#inst button').forEach(b => b.classList.toggle('active', b.dataset.inst === S.instrument()));
     if (current && current.unmount) current.unmount();
+    if (currentPage && currentPage.unmount) currentPage.unmount();
     current = null;
+    currentPage = null;
     board.onCell = null;
     document.querySelectorAll('button[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     FD.theme.renderRank();
@@ -63,7 +66,8 @@
       board.onCell = (s, f) => current && current.onCell(s, f);
       drill.mount(ctx);
     } else {
-      FD.views[tab].mount($(tab + '-view'));
+      currentPage = FD.views[tab];
+      currentPage.mount($(tab + '-view'));
     }
     history.replaceState(null, '', '#' + tab);
   }
@@ -75,13 +79,18 @@
     S.setInstrument(b.dataset.inst);
     show(currentTab);
   }));
+  $('strip').addEventListener('click', e => {
+    const chip = e.target.closest('[data-i]');
+    if (chip && current && current.onStrip) current.onStrip(+chip.dataset.i);
+  });
   $('hud-reset').addEventListener('click', e => { e.currentTarget.blur(); UI.hud.reset(); });
 
   document.addEventListener('keydown', e => {
-    if (!current || !current.onKey) return;
+    const handler = current || currentPage;
+    if (!handler || !handler.onKey) return;
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
     if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
-    if (current.onKey(e)) e.preventDefault();
+    if (handler.onKey(e)) e.preventDefault();
   });
 
   window.addEventListener('hashchange', () => show(location.hash.slice(1)));

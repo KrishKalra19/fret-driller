@@ -1,7 +1,7 @@
 // Explore page: the whole neck with a scale highlighted, optional position highlight and scale comparison.
 (() => {
   const T = FD.theory, S = FD.store, UI = FD.ui, A = FD.audio;
-  const DEFAULTS = { root: 9, scale: 'minorPent', others: false, labels: 'names', hl: 'none', posF0: null, boxStart: 5, boxSpan: 4, cmp: 'none', cmpRoot: 'same' };
+  const DEFAULTS = { root: 9, scale: 'minorPent', others: false, labels: 'names', hl: 'none', posF0: null, boxStart: 5, boxSpan: 4, cmp: 'none', cmpRoot: 'same', mode: 'scale', chord: 'D7' };
   const key = (s, f) => s + ',' + f;
   const plainName = p => T.pretty(T.name(p, S.settings().spelling === 'flat' ? 'flat' : 'sharp'));
   const chips = (info, p, cls = '') => `<span class="chip ${cls}">${T.pretty(info.names.get(p))}<sub>${info.degs.get(p)}</sub></span>`;
@@ -31,6 +31,17 @@
 
     compute() {
       const o = this.o;
+      this.pattern = null;
+      this.box = null;
+      if (o.mode === 'chord') {
+        this.chord = FD.chords.parse(o.chord) || FD.chords.parse('C');
+        if (o.hl === 'nps') o.hl = 'none';
+        if (o.hl === 'box') {
+          o.boxStart = Math.min(Math.max(0, o.boxStart), 25 - o.boxSpan);
+          this.box = { from: o.boxStart, to: o.boxStart + o.boxSpan - 1 };
+        }
+        return;
+      }
       this.info = T.scaleInfo(o.root, o.scale);
       this.cmp = o.cmp !== 'none' ? T.scaleInfo(o.cmpRoot === 'same' ? o.root : o.cmpRoot, o.cmp) : null;
       this.pattern = null;
@@ -50,6 +61,8 @@
     buildOptions() {
       const box = this.el.querySelector('#ex-options'), o = this.o;
       box.textContent = '';
+      UI.select(box, 'Show', [{ value: 'scale', label: 'Scale' }, { value: 'chord', label: 'Chord tones' }], o.mode, v => this.set('mode', v));
+      if (o.mode === 'chord') return this.buildChordOptions(box);
       UI.select(box, 'Key', T.rootOptions(o.scale), o.root, v => this.set('root', v));
       UI.select(box, 'Scale', FD.scaleOptions(), o.scale, v => { o.posF0 = null; this.set('scale', v); });
       UI.select(box, 'Labels', [{ value: 'names', label: 'Note names' }, { value: 'degrees', label: 'Scale degrees' }, { value: 'none', label: 'None' }], o.labels, v => this.set('labels', v));
@@ -75,6 +88,62 @@
       UI.button(box, '▶ Play scale', () => this.play());
     },
 
+    buildChordOptions(box) {
+      const o = this.o;
+      const input = UI.textInput(box, 'Chord', o.chord, 'D7', v => {
+        if (!FD.chords.parse(v)) { this.chordError = `Can't read "${v}". Try C, Am, D7, Fmaj7, Bm7b5, G9.`; this.draw(); return; }
+        this.chordError = '';
+        this.set('chord', v.trim());
+      });
+      input.closest('.field').classList.remove('grow');
+      UI.select(box, 'Labels', [{ value: 'degrees', label: 'Chord degrees' }, { value: 'names', label: 'Note names' }, { value: 'none', label: 'None' }], o.labels === 'none' ? 'none' : o.labels, v => this.set('labels', v));
+      UI.select(box, 'Highlight', [{ value: 'none', label: 'Whole neck' }, { value: 'box', label: 'Fret box' }], o.hl, v => this.set('hl', v));
+      if (o.hl === 'box') {
+        const starts = [];
+        for (let f = 0; f <= 25 - o.boxSpan; f++) starts.push({ value: f, label: `Frets ${f}–${f + o.boxSpan - 1}` });
+        UI.select(box, 'Position', starts, o.boxStart, v => this.set('boxStart', v));
+        UI.select(box, 'Width', [4, 5, 6].map(w => ({ value: w, label: w + ' frets' })), o.boxSpan, v => this.set('boxSpan', v));
+      }
+      UI.toggle(box, 'Show all other notes', o.others, v => this.set('others', v));
+      UI.button(box, '▶ Play chord', () => this.playChord());
+    },
+
+    drawChord() {
+      const o = this.o, st = S.settings(), c = this.chord, board = this.board;
+      board.box = this.box;
+      board.marks.clear();
+      board.configure({ minFret: 0, maxFret: 24, leftHanded: st.leftHanded, strings: T.allStrings() });
+      for (let s = 0; s < T.count(); s++) {
+        for (let f = 0; f <= 24; f++) {
+          const p = T.pc(T.midiAt(s, f));
+          const t = c.byPc.get(p);
+          let cls, label;
+          if (t) { cls = `ct ct-${t.family}`; label = o.labels === 'names' ? T.pretty(t.name) : o.labels === 'none' ? '' : t.label; }
+          else if (o.others) { cls = 'other'; label = o.labels === 'names' ? plainName(p) : o.labels === 'none' ? '' : T.INTERVALS[T.mod12(p - c.root)]; }
+          else continue;
+          if (!this.inHighlight(s, f)) cls += ' dim';
+          board.mark(s, f, { cls, label, anim: false });
+        }
+      }
+      this.el.querySelector('#ex-title').textContent = `${c.symbol} chord tones`;
+      const info = this.el.querySelector('#ex-info');
+      info.textContent = this.chordError || 'Click any fret to hear it';
+      info.className = 'prompt-sub' + (this.chordError ? ' bad' : '');
+      this.el.querySelector('#ex-notes').innerHTML = c.tones.map(t => `<span class="ct-chip ct-${t.family}"><b>${T.pretty(t.name)}</b><small>${t.label}</small></span>`).join('');
+      const legend = this.el.querySelector('#ex-legend');
+      legend.hidden = false;
+      const names = { r: 'Root', 3: '3rd', 5: '5th', 7: '7th', x: 'Extension' };
+      legend.innerHTML = [...new Set(c.tones.map(t => t.family))].map(fam => `<span><i class="sw ct-${fam}"></i>${names[fam]}</span>`).join('');
+    },
+
+    playChord() {
+      const c = this.chord;
+      const base = 48 + c.root;
+      const notes = c.tones.map(t => base + t.iv);
+      A.sequence(notes, 0.05);
+      setTimeout(() => A.sequence(notes.concat(notes.slice(0, -1).reverse()), 0.2), 900);
+    },
+
     label(info, p) {
       if (this.o.labels === 'names') return T.pretty(info.names.get(p));
       if (this.o.labels === 'degrees') return info.degs.get(p);
@@ -88,6 +157,7 @@
     },
 
     draw() {
+      if (this.o.mode === 'chord') return this.drawChord();
       const o = this.o, st = S.settings(), { info, cmp, board } = this;
       board.box = this.box;
       board.marks.clear();
@@ -128,6 +198,16 @@
     clickCell(s, f) {
       const midi = T.midiAt(s, f), p = T.pc(midi), { info, cmp } = this;
       A.pluck(midi);
+      if (this.o.mode === 'chord') {
+        const t = this.chord.byPc.get(p);
+        const nm = t ? t.name : T.name(p, S.settings().spelling === 'flat' ? 'flat' : 'sharp');
+        const e = this.el.querySelector('#ex-info');
+        e.textContent = `${T.STRING_NAMES[s]} string, fret ${f}: ${T.pretty(nm)}${T.octaveOf(midi, nm)} is ` +
+          (t ? (t.deg === 1 ? `the root of ${this.chord.symbol}` : `the ${t.label} of ${this.chord.symbol}`) : `not in ${this.chord.symbol} (${T.INTERVALS[T.mod12(p - this.chord.root)]} from the root)`);
+        e.className = 'prompt-sub' + (t ? ' ok' : '');
+        this.board.flash(s, f, { cls: 'hit', label: this.o.labels === 'none' ? '' : T.pretty(nm) }, 350);
+        return;
+      }
       const src = info.set.has(p) ? info : cmp && cmp.set.has(p) ? cmp : null;
       const nm = src ? src.names.get(p) : T.name(p, S.settings().spelling === 'flat' ? 'flat' : 'sharp');
       const role = src

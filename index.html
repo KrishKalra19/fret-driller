@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Exo+2:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=8">
+  <link rel="stylesheet" href="css/style.css?v=9">
   <script>
     try { document.documentElement.dataset.side = (JSON.parse(localStorage.getItem('fretdriller.v1')) || {}).settings.side || 'jedi'; }
     catch (e) { document.documentElement.dataset.side = 'jedi'; }
@@ -31,6 +31,10 @@
         <button data-tab="name">Name the note</button>
         <button data-tab="sequence">Sequences</button>
         <button data-tab="scales">Scale patterns</button>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">Play</span>
+        <button data-tab="jam">Jam</button>
       </div>
     </nav>
     <div class="top-right">
@@ -70,20 +74,24 @@
       </div>
     </section>
     <section id="explore-view" class="view" hidden></section>
+    <section id="jam-view" class="view" hidden></section>
     <section id="stats-view" class="view" hidden></section>
     <section id="settings-view" class="view" hidden></section>
   </main>
 
-  <script src="js/theory.js?v=8"></script>
-  <script src="js/store.js?v=8"></script>
-  <script src="js/audio.js?v=8"></script>
-  <script src="js/fretboard.js?v=8"></script>
-  <script src="js/ui.js?v=8"></script>
-  <script src="js/drills.js?v=8"></script>
-  <script src="js/views.js?v=8"></script>
-  <script src="js/explore.js?v=8"></script>
-  <script src="js/theme.js?v=8"></script>
-  <script src="js/app.js?v=8"></script>
-  <script src="js/quotes.js?v=8"></script>
+  <script src="js/theory.js?v=9"></script>
+  <script src="js/store.js?v=9"></script>
+  <script src="js/audio.js?v=9"></script>
+  <script src="js/fretboard.js?v=9"></script>
+  <script src="js/ui.js?v=9"></script>
+  <script src="js/drills.js?v=9"></script>
+  <script src="js/views.js?v=9"></script>
+  <script src="js/chords.js?v=9"></script>
+  <script src="js/explore.js?v=9"></script>
+  <script src="js/backing.js?v=9"></script>
+  <script src="js/jam.js?v=9"></script>
+  <script src="js/theme.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
+  <script src="js/quotes.js?v=9"></script>
 </body>
 </html>
