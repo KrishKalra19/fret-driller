@@ -67,7 +67,7 @@ FD.ui = (() => {
     return b;
   }
 
-  function textInput(parent, label, value, placeholder, onSubmit) {
+  function textInput(parent, label, value, placeholder, onSubmit, buttonLabel = 'Use') {
     const w = field(parent, label);
     w.classList.add('grow');
     const row = document.createElement('div');
@@ -81,7 +81,7 @@ FD.ui = (() => {
     i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
     row.appendChild(i);
     w.appendChild(row);
-    button(row, 'Use', go, 'primary');
+    button(row, buttonLabel, go, 'primary');
     return i;
   }
 

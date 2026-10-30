@@ -464,3 +464,8 @@ input[type="range"] { accent-color: var(--accent); width: 160px; height: 38px; }
   .hud b { font-size: 17px; }
   .pad { grid-template-columns: repeat(6, 1fr); }
 }
+
+/* ---------- jam: track row ---------- */
+.save-row { flex-basis: 100%; align-items: flex-end; }
+.save-row .field.grow { flex: 0 1 420px; }
+.jam-label #jam-key { color: var(--text); }

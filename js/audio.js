@@ -94,5 +94,13 @@ FD.audio = (() => {
   // The backing track shares this context and routes through the master volume.
   const context = () => (ensure() ? { ctx, master } : null);
 
-  return { pluck, buzz, sequence, context };
+  // A rendered string pluck for the backing guitar: { buf, rate }.
+  function pluckBuffer(midi) {
+    if (!ensure()) return null;
+    let v = cache.get(midi);
+    if (!v) { v = render(midi); cache.set(midi, v); }
+    return v;
+  }
+
+  return { pluck, buzz, sequence, context, pluckBuffer };
 })();
