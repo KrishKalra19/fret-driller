@@ -467,6 +467,11 @@ input[type="range"] { accent-color: var(--accent); width: 160px; height: 38px; }
   .pad { grid-template-columns: repeat(6, 1fr); }
 }
 
+/* The notes table needs 320 px with full-size bars, more than a 320 px screen has after padding. */
+@media (max-width: 360px) {
+  .bar { width: 64px; }
+}
+
 /* On a small screen the wrapped header is too tall to stay pinned: it covers the fretboard. */
 @media (max-width: 760px), (max-height: 500px) {
   header.top { position: static; }
