@@ -22,13 +22,13 @@
   FD.views.jam = {
     mount(el) {
       const o = (this.o = S.opts('jam', DEFAULTS));
-      o.vol = Object.assign({}, DEFAULTS.vol, o.vol);
       if (o.prog != null) {
         // Saves from before presets had keys: keep a custom loop as custom.
         if (o.prog !== 'C D7 G7 C') { o.track = 'custom'; o.custom = o.prog; }
         delete o.prog;
         S.saveOpts();
       }
+      this.clean(o);
       this.el = el;
       el.innerHTML = `
         <div class="jam-top">
@@ -76,6 +76,34 @@
       this.counting = false;
       cancelAnimationFrame(this.raf);
       S.saveOpts();
+    },
+
+    // Replace anything in a save that would stop the page or the band, and leave the rest as it is.
+    clean(o) {
+      const isFret = f => Number.isInteger(f) && f >= 0 && f <= 24;
+      const vol = o.vol && typeof o.vol === 'object' ? o.vol : {};
+      o.vol = {};
+      for (const k of Object.keys(DEFAULTS.vol)) o.vol[k] = Number.isFinite(vol[k]) ? Math.max(0, Math.min(1, vol[k])) : DEFAULTS.vol[k];
+      if (!Number.isInteger(o.key)) o.key = DEFAULTS.key;
+      o.key = T.mod12(o.key);
+      if (typeof o.custom !== 'string') o.custom = DEFAULTS.custom;
+      o.bpm = Number.isFinite(o.bpm) ? Math.max(40, Math.min(240, o.bpm)) : DEFAULTS.bpm;
+      if (![1, 2, 4].includes(o.barsPerChord)) o.barsPerChord = DEFAULTS.barsPerChord;
+      if (!B.GROOVES[o.groove]) o.groove = DEFAULTS.groove;
+      if (!B.SOUNDS[o.sound]) o.sound = DEFAULTS.sound;
+      if (!CYCLES.some(c => c.value === o.cycle)) o.cycle = DEFAULTS.cycle;
+      if (![1, 2, 4].includes(o.cycleEvery)) o.cycleEvery = DEFAULTS.cycleEvery;
+      if (!isFret(o.lockFrom)) o.lockFrom = DEFAULTS.lockFrom;
+      if (!isFret(o.lockTo)) o.lockTo = DEFAULTS.lockTo;
+      if (!Number.isFinite(o.totalSec)) o.totalSec = 0;
+      o.saved = (Array.isArray(o.saved) ? o.saved : []).filter(t => t && typeof t.prog === 'string');
+      o.saved.forEach((t, i) => {
+        if (t.id == null) t.id = `saved${i}`;
+        if (typeof t.name !== 'string') t.name = `My track ${i + 1}`;
+      });
+      const track = String(o.track);
+      if (track.startsWith('s:')) o.track = o.saved.some(t => 's:' + t.id === track) ? track : 'custom';
+      else if (track !== 'custom' && !C.PRESETS.some(p => 'p:' + p.id === track)) o.track = DEFAULTS.track;
     },
 
     // ------------------------------------------------------------ progression + key
@@ -309,7 +337,10 @@
         if (!this.counting) {
           const dt = Math.min(1, (now - this.lastTick) / 1000);
           sessionSec += dt;
-          this.o.totalSec = (this.o.totalSec || 0) + dt;
+          const before = this.o.totalSec || 0;
+          this.o.totalSec = before + dt;
+          // Keep the total safe if the page closes mid-jam.
+          if (Math.floor(this.o.totalSec / 10) !== Math.floor(before / 10)) S.saveOpts();
         }
         this.lastTick = now;
         if (dirty) this.render();

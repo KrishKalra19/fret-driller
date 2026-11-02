@@ -9,6 +9,8 @@
   FD.views.explore = {
     mount(el) {
       this.o = S.opts('explore', DEFAULTS);
+      if (!T.SCALES[this.o.scale]) this.o.scale = DEFAULTS.scale;
+      if (this.o.cmp !== 'none' && !T.SCALES[this.o.cmp]) this.o.cmp = 'none';
       el.innerHTML = `
         <div class="prompt-row"><div class="prompt">
           <div class="prompt-main ex-title" id="ex-title"></div>

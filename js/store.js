@@ -13,31 +13,54 @@ FD.store = (() => {
   const PER_INSTRUMENT = ['minFret', 'maxFret', 'strings'];
   const instDefaults = () => ({ minFret: 0, maxFret: 12, strings: FD.theory.allStrings() });
 
+  const obj = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+  const isFret = f => Number.isInteger(f) && f >= 0 && f <= 24;
+
   let data = {};
-  try { data = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { data = {}; }
-  data.settings = data.settings || {};
-  data.opts = data.opts || {};
-  data.stats = data.stats || {};
-  data.best = data.best || {};
-  data.inst = data.inst || {};
-  data.xp = data.xp || {};
+  try { data = obj(JSON.parse(localStorage.getItem(KEY))); } catch (e) { data = {}; }
+  data.settings = obj(data.settings);
+  data.opts = obj(data.opts);
+  data.stats = obj(data.stats);
+  data.best = obj(data.best);
+  data.inst = obj(data.inst);
+  data.xp = obj(data.xp);
 
   // Migrate pre-bass saves, where everything belonged to the guitar.
-  if (data.stats.find || data.stats.name) data.stats = { guitar: data.stats };
+  if ('find' in data.stats || 'name' in data.stats) data.stats = { guitar: data.stats };
   if (Object.keys(data.best).some(k => k.startsWith('scale|'))) data.best = { guitar: data.best };
-  if (data.settings.strings) {
+  if (PER_INSTRUMENT.some(k => k in data.settings)) {
     data.inst.guitar = Object.assign({}, data.inst.guitar);
     for (const k of PER_INSTRUMENT) { if (k in data.settings) data.inst.guitar[k] = data.settings[k]; delete data.settings[k]; }
   }
   data.settings = Object.assign({}, DEFAULT_SETTINGS, data.settings);
+  if (!Number.isFinite(data.settings.volume)) data.settings.volume = DEFAULT_SETTINGS.volume;
   data.instrument = data.instrument === 'bass' ? 'bass' : 'guitar';
   FD.theory.setInstrument(data.instrument);
 
   const id = () => data.instrument;
 
+  // Damaged stats are repaired where they stand, so the good entries around them survive.
+  function cleanStatMap(map) {
+    for (const k of Object.keys(map)) {
+      if (!map[k] || typeof map[k] !== 'object') { delete map[k]; continue; }
+      for (const f of ['n', 'ok', 't', 'tn', 'total']) if (!Number.isFinite(map[k][f])) map[k][f] = 0;
+    }
+    return map;
+  }
+  for (const inst of ['guitar', 'bass']) {
+    if (!(inst in data.stats)) continue;
+    const modes = (data.stats[inst] = obj(data.stats[inst]));
+    for (const m of Object.keys(modes)) {
+      modes[m] = obj(modes[m]);
+      modes[m].cells = cleanStatMap(obj(modes[m].cells));
+      modes[m].notes = cleanStatMap(obj(modes[m].notes));
+    }
+  }
+  for (const inst of ['guitar', 'bass']) if (inst in data.best) data.best[inst] = obj(data.best[inst]);
+
   // Lifetime correct answers per instrument drive the rank. Older saves get a head start from their stats.
   for (const inst of ['guitar', 'bass']) {
-    if (data.xp[inst] != null) continue;
+    if (Number.isFinite(data.xp[inst])) continue;
     let est = 0;
     for (const mode of Object.values(data.stats[inst] || {})) {
       for (const st of Object.values(mode.notes || {})) est += Math.round(st.total * (st.n ? st.ok / st.n : 0));
@@ -45,18 +68,24 @@ FD.store = (() => {
     data.xp[inst] = est;
   }
   const instSettings = () => {
-    const cur = Object.assign(instDefaults(), data.inst[id()]);
-    if (cur.strings.length !== FD.theory.count()) cur.strings = FD.theory.allStrings();
+    const cur = Object.assign(instDefaults(), obj(data.inst[id()]));
+    if (!Array.isArray(cur.strings) || cur.strings.length !== FD.theory.count()) cur.strings = FD.theory.allStrings();
+    if (!isFret(cur.minFret) || !isFret(cur.maxFret) || cur.minFret > cur.maxFret) { cur.minFret = 0; cur.maxFret = 12; }
     return (data.inst[id()] = cur);
   };
 
   let saveTimer = null;
+  function write() {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* storage unavailable */ }
+  }
   function save() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* storage unavailable */ }
-    }, 150);
+    saveTimer = setTimeout(write, 150);
   }
+  // A save still waiting when the page closes would otherwise be lost.
+  window.addEventListener('pagehide', () => { if (saveTimer) write(); });
 
   function bucket(mode) {
     const mine = data.stats[id()] || (data.stats[id()] = {});

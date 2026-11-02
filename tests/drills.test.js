@@ -96,18 +96,16 @@ test('Find: a wrong answer counts one miss however many times, and the note can 
 });
 
 test('Find: revealing marks every answer, even after an earlier round of "every position"', () => {
-  const { drill, state } = setup('find', { opts: { mode: 'all' } });
+  // One string and one fret, so the same fret is the answer both times.
+  const { drill, state } = setup('find', { opts: { mode: 'all' }, inst: { minFret: 5, maxFret: 5, strings: ONE_STRING_6 } });
   drill.next();
-  const first = drill.targets[0];
-  drill.onCell(first.s, first.f);
+  drill.onCell(5, 5);
+  clearTimeout(drill.timer);
   drill.o.mode = 'string';
-  for (let i = 0; i < 60; i++) {
-    drill.next();
-    if (drill.targets.some(c => c.s === first.s && c.f === first.f)) break;
-  }
-  assert.ok(drill.targets.some(c => c.s === first.s && c.f === first.f), 'the same fret came up again');
+  drill.next();
   drill.reveal();
-  assert.equal(state.marks.size, drill.targets.length);
+  assert.equal(state.marks.size, 1);
+  clearTimeout(drill.timer);
 });
 
 test('Find uses the chosen spelling', () => {

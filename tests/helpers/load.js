@@ -25,24 +25,32 @@ function fakeStorage(initial = {}) {
 }
 
 // opts.save: the saved object (or raw string) under fretdriller.v1. opts.storage: replaces localStorage.
-// opts.globals: extra globals, such as a document.
+// opts.storageGetterThrows: touching localStorage at all throws, as some browsers do when storage is blocked.
+// opts.globals: extra globals, such as a document. The result's fire(type) sends a window event.
 function load(opts = {}) {
   const initial = opts.save === undefined ? {} : { [KEY]: typeof opts.save === 'string' ? opts.save : JSON.stringify(opts.save) };
+  const listeners = {};
   const sandbox = {
     console, setTimeout, clearTimeout, setInterval, clearInterval, performance,
     localStorage: opts.storage || fakeStorage(initial),
     requestAnimationFrame: () => 0,
     cancelAnimationFrame: () => {},
     confirm: () => true,
+    addEventListener: (type, fn) => { (listeners[type] = listeners[type] || []).push(fn); },
     ...opts.globals,
   };
+  if (opts.storageGetterThrows) {
+    delete sandbox.localStorage;
+    Object.defineProperty(sandbox, 'localStorage', { get() { throw new Error('SecurityError'); } });
+  }
   sandbox.window = sandbox;
   const context = vm.createContext(sandbox);
   for (const name of scriptOrder().filter(n => !NEEDS_PAGE.includes(n))) {
     const file = path.join(ROOT, 'js', name + '.js');
     vm.runInContext(fs.readFileSync(file, 'utf8'), context, { filename: file });
   }
-  return { FD: sandbox.FD, window: sandbox, localStorage: sandbox.localStorage };
+  const fire = type => (listeners[type] || []).forEach(fn => fn({ type }));
+  return { FD: sandbox.FD, window: sandbox, localStorage: opts.storageGetterThrows ? null : sandbox.localStorage, fire };
 }
 
 // Values made inside the vm have their own Array and Object, which deepStrictEqual rejects. Copy them out first.

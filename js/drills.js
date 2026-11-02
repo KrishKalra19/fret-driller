@@ -255,6 +255,7 @@
     mount(ctx) {
       this.ctx = ctx;
       this.o = S.opts('sequence', this.defaults);
+      if (!T.SCALES[this.o.scale]) this.o.scale = this.defaults.scale;
       this.buildOptions();
       ctx.hint('Click each note in order. <kbd>Space</kbd> new sequence · <kbd>H</kbd> hear it. Your own notes can include octaves, e.g. <code>C5 C5 B4 A4</code>.');
       this.next();
@@ -470,6 +471,7 @@
     mount(ctx) {
       this.ctx = ctx;
       this.o = S.opts('scales', this.defaults);
+      if (!T.SCALES[this.o.scale]) this.o.scale = this.defaults.scale;
       ctx.hint('Play the pattern in order, root notes glow. Click a note in the strip to jump there. <kbd>Space</kbd> restart · <kbd>H</kbd> hear it. Try <b>From memory</b> once the shape sticks.');
       this.build();
     },
