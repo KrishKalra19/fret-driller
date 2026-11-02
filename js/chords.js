@@ -33,14 +33,14 @@ FD.chords = (() => {
 
   function parse(sym) {
     const raw = String(sym || '').trim().replace(/♯/g, '#').replace(/♭/g, 'b');
-    const m = /^([A-Ga-g])(#|b)?(.*)$/.exec(raw);
+    const m = /^([A-Ga-g])(#{1,2}|b{1,2})?(.*)$/.exec(raw);
     if (!m) return null;
     const letter = m[1].toUpperCase();
     const acc = m[2] || '';
     const q = BY_NAME.get(m[3]);
     if (!q) return null;
     const rootName = letter + acc;
-    const root = T.mod12(T.LETTER_PC[letter] + (acc === '#' ? 1 : acc === 'b' ? -1 : 0));
+    const root = T.mod12(T.LETTER_PC[letter] + (acc[0] === 'b' ? -acc.length : acc.length));
     const li = LETTERS.indexOf(letter);
     const tones = q.tones.map(([iv, deg]) => {
       const p = T.mod12(root + iv);
@@ -108,7 +108,7 @@ FD.chords = (() => {
       const [sym, dur] = tok.split(':');
       const c = parse(sym);
       if (!c) return tok;
-      const suffix = sym.replace(/♯/g, '#').replace(/♭/g, 'b').replace(/^[A-Ga-g](#|b)?/, '');
+      const suffix = sym.replace(/♯/g, '#').replace(/♭/g, 'b').replace(/^[A-Ga-g](#{1,2}|b{1,2})?/, '');
       return MAJOR_KEYS[T.mod12(c.root + semis)] + suffix + (dur != null ? ':' + dur : '');
     }).join(' ');
   }
@@ -156,9 +156,9 @@ FD.chords = (() => {
     { id: 'waltz', group: 'Rock & pop', label: 'Waltz I–vi–ii–V', roman: 'I vi ii V', key: 2, groove: 'waltz', bpm: 132 },
   ];
 
-  function presetItems(preset, keyPc) {
-    return parseProgression(preset.roman, { key: keyPc, minor: !!preset.minor }).items;
+  function presetProgression(preset, keyPc) {
+    return parseProgression(preset.roman, { key: keyPc, minor: !!preset.minor });
   }
 
-  return { QUALITIES, PRESETS, MAJOR_KEYS, MINOR_KEYS, keyName, parse, parseRoman, parseProgression, transposeText, toText, presetItems, toneFor };
+  return { QUALITIES, PRESETS, MAJOR_KEYS, MINOR_KEYS, keyName, parse, parseRoman, parseProgression, transposeText, toText, presetProgression, toneFor };
 })();

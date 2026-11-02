@@ -83,7 +83,7 @@
 
     items(shift = 0) {
       const p = this.preset();
-      if (p) return { items: C.presetItems(p, T.mod12(this.o.key + shift)) };
+      if (p) return C.presetProgression(p, T.mod12(this.o.key + shift));
       return C.parseProgression(shift ? C.transposeText(this.o.custom, shift) : this.o.custom);
     },
 
