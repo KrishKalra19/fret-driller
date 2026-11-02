@@ -55,6 +55,7 @@
       const { board } = this.ctx;
       board.clear();
       this.t = null;
+      this.found = null;
       const cells = rangeCells().filter(c => !this.o.naturals || T.isNatural(c.midi));
       if (!cells.length) { this.ctx.prompt('No frets to drill', 'Turn on some strings or widen the fret range in Settings'); return; }
       const sp = T.promptSpelling(S.settings().spelling);
@@ -303,6 +304,8 @@
 
     fail(msg) {
       this.notes = null;
+      this.box = null;
+      this.ctx.board.setBox(null);
       this.ctx.strip(null);
       this.ctx.prompt('Hmm', msg);
     },
@@ -312,11 +315,25 @@
       return notes.every(n => cells.some(c => T.pc(c.midi) === n.pc && (!this.o.octave || n.midi == null || c.midi === n.midi)));
     },
 
+    // With no position to stay in, a note only has to be on a fret the board draws.
+    onBoard(notes) {
+      const { maxFret } = S.settings();
+      return notes.every(n => T.TUNING.some(open => {
+        for (let f = 0; f <= maxFret; f++) {
+          if (T.pc(open + f) === n.pc && (!this.o.octave || n.midi == null || open + f === n.midi)) return true;
+        }
+        return false;
+      }));
+    },
+
     chooseBox(notes) {
       const { span, starts } = this.boxStarts();
       if (!starts.length) return null;
       const mk = f => ({ from: f, to: f + span - 1 });
-      if (this.o.boxStart !== 'auto') return mk(starts.includes(this.o.boxStart) ? this.o.boxStart : starts[0]);
+      if (this.o.boxStart !== 'auto') {
+        const box = mk(starts.includes(this.o.boxStart) ? this.o.boxStart : starts[0]);
+        return !notes || this.fits(notes, box) ? box : null;
+      }
       if (!notes) return mk(pick(starts));
       const ok = starts.filter(f => this.fits(notes, mk(f)));
       return ok.length ? mk(pick(ok)) : null;
@@ -356,10 +373,15 @@
         notes = parsed.notes;
       }
 
+      if (!rangeCells().length) return this.fail('No frets to drill. Turn on some strings or widen the fret range in Settings');
+
       this.box = o.position ? this.chooseBox(notes) : null;
       this.ctx.board.setBox(this.box);
       if (o.position && !this.box) {
-        return this.fail(notes ? "Those notes don't fit in one position with your settings. Try a wider box or turn off Stay in position" : 'Your fret range is narrower than the box width');
+        return this.fail(notes ? "Those notes don't fit in that position with your settings. Try another position, a wider box, or turn off Stay in position" : 'Your fret range is narrower than the box width');
+      }
+      if (notes && !o.position && !this.onBoard(notes)) {
+        return this.fail("Some of those notes aren't on the board. Change the octave, widen the fret range, or turn off Right octave");
       }
       if (!notes) {
         notes = this.randomMelody();
@@ -527,7 +549,11 @@
       const { board } = this.ctx;
       board.clear();
       this.i = 0; this.mistakes = 0; this.tStart = null; this.tl = now(); this.done = false; this.nextCell = null; this.jumped = false;
-      if (!this.seq.length) { this.ctx.prompt('Hmm', 'No notes in this pattern'); return; }
+      if (!this.seq.length) {
+        this.ctx.strip(null);
+        this.ctx.prompt('Hmm', 'Not enough notes here for that sequence. Try a wider box or a different sequence');
+        return;
+      }
       if (this.o.view !== 'memory') {
         for (const p of this.pattern) board.mark(p.s, p.f, { cls: this.baseCls(p), label: this.label(p), anim: false });
       }

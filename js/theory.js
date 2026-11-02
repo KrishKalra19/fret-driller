@@ -101,7 +101,8 @@ FD.theory = (() => {
   }
 
   function parseNote(tok) {
-    const t = tok.replace(/♯/g, '#').replace(/♭/g, 'b');
+    // Not the first character: "♭" alone would otherwise read as the note B.
+    const t = tok.replace(/(?!^)♯/g, '#').replace(/(?!^)♭/g, 'b');
     const m = /^([A-Ga-g])(#{1,2}|b{1,2})?(-?\d)?$/.exec(t);
     if (!m) return null;
     const letter = m[1].toUpperCase();

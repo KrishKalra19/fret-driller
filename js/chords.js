@@ -32,7 +32,8 @@ FD.chords = (() => {
   const family = deg => (deg === 1 ? 'r' : deg === 3 ? '3' : deg === 5 ? '5' : deg === 7 ? '7' : 'x');
 
   function parse(sym) {
-    const raw = String(sym || '').trim().replace(/♯/g, '#').replace(/♭/g, 'b');
+    // Not the first character: "♭7" alone would otherwise read as B7.
+    const raw = String(sym || '').trim().replace(/(?!^)♯/g, '#').replace(/(?!^)♭/g, 'b');
     const m = /^([A-Ga-g])(#{1,2}|b{1,2})?(.*)$/.exec(raw);
     if (!m) return null;
     const letter = m[1].toUpperCase();
