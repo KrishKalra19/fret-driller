@@ -95,7 +95,7 @@ FD.chords = (() => {
       const [sym, dur] = tok.split(':');
       const chord = roman ? parseRoman(sym, roman.key, roman.minor) : parse(sym);
       const beats = dur != null ? Math.max(1, Math.round(Number(dur))) : null;
-      if (!chord || (dur != null && !beats)) return { error: `Can't read the chord "${tok}". Try names like C, Am, D7, Fmaj7, Bm7b5, or D7:2 for two beats.` };
+      if (!chord || (dur != null && !Number.isFinite(beats))) return { error: `Can't read the chord "${tok}". Try names like C, Am, D7, Fmaj7, Bm7b5, or D7:2 for two beats.` };
       items.push({ chord, beats });
     }
     if (!items.length) return { error: 'Type at least one chord, e.g. C D7 G7 C' };

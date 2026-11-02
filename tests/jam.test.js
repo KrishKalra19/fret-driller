@@ -247,6 +247,21 @@ test('key cycles work on typed-in tracks too, keeping durations', () => {
   assert.deepEqual(plain(j.timeline(1, 4).segs.map(s => s.beats)), [2, 2, 4]);
 });
 
+test('leaving the page mid count-in does not leave it counting', () => {
+  const j = page({});
+  j.raf = 0;
+  j.counting = true;
+  j.countBeat = 2;
+  j.unmount();
+  assert.equal(j.counting, false);
+});
+
+test('a chord length of infinity is an error, not an endless chord', () => {
+  assert.match(C.parseProgression('C:1e999').error, /"C:1e999"/);
+  assert.match(C.parseProgression('C:Infinity').error, /"C:Infinity"/);
+  assert.equal(C.parseProgression('C:8').items[0].beats, 8);
+});
+
 test('a typed-in track that stops parsing falls back to the last good one', () => {
   const j = page({ track: 'custom', custom: 'Am F' });
   assert.deepEqual(plain(j.timeline(0, 4).segs.map(s => s.chord.symbol)), ['Am', 'F']);

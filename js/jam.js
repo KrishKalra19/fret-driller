@@ -73,6 +73,7 @@
 
     unmount() {
       B.stop();
+      this.counting = false;
       cancelAnimationFrame(this.raf);
       S.saveOpts();
     },
@@ -359,7 +360,7 @@
       const totalBars = Math.round(segs.reduce((a, s) => a + s.beats, 0) / v.bpb);
       $('#jam-bar').textContent = playing && !this.counting && !v.idle
         ? `Bar ${Math.floor(v.beatInLoop / v.bpb) + 1} of ${totalBars} · ${B.GROOVES[o.groove].label} · ${o.bpm} BPM`
-        : `${segs.length} chord${segs.length === 1 ? '' : 's'} · ${totalBars} bars · ${B.GROOVES[o.groove].label} · ${o.bpm} BPM`;
+        : `${segs.length} chord${segs.length === 1 ? '' : 's'} · ${totalBars} bar${totalBars === 1 ? '' : 's'} · ${B.GROOVES[o.groove].label} · ${o.bpm} BPM`;
 
       const defaultBeats = o.barsPerChord * v.bpb;
       $('#jam-prog').innerHTML = segs.map((s, i) =>
