@@ -366,3 +366,25 @@ test('Scale patterns: a clean run saves a best time, and a jumped or missed run 
   run();
   assert.ok(FD.store.best(drill.bestKey()) != null);
 });
+
+test('Scale patterns: the board never draws a box that starts past its last fret', () => {
+  const { drill } = setup('scales', { opts: { shape: 'box', boxStart: 20 } });
+  // Draws on every change, like the real board, whose position box needs its first fret on the board.
+  const drawn = [];
+  const board = {
+    cfg: { maxFret: 12 }, box: null,
+    configure(cfg) { Object.assign(this.cfg, cfg); this.render(); },
+    setBox(b) { this.box = b; this.render(); },
+    render() { if (this.box) drawn.push({ from: this.box.from, maxFret: this.cfg.maxFret }); },
+  };
+  drill.ctx.board = board;
+
+  drill.compute();
+  for (const change of [{ boxStart: 0 }, { boxStart: 20 }, { shape: 'nps' }, { shape: 'box', boxStart: 20 }, { boxStart: 3 }]) {
+    Object.assign(drill.o, change);
+    drill.compute();
+  }
+
+  assert.ok(drawn.length > 0);
+  for (const d of drawn) assert.ok(d.from <= d.maxFret, `box from fret ${d.from} on a board ending at ${d.maxFret}`);
+});

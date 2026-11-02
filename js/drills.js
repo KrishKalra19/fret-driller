@@ -497,8 +497,9 @@
       this.seq = T.orderSequence(this.pattern, o.dir, o.seq);
       const maxF = Math.max(0, ...this.pattern.map(p => p.f));
       const { board } = this.ctx;
+      // Set before configure, which draws: the old box may start past the new last fret.
+      board.box = o.shape === 'box' ? { from: o.boxStart, to: o.boxStart + o.boxSpan - 1 } : null;
       board.configure({ minFret: 0, strings: T.allStrings(), maxFret: Math.min(24, Math.max(S.settings().maxFret, maxF + 1)) });
-      board.setBox(o.shape === 'box' ? { from: o.boxStart, to: o.boxStart + o.boxSpan - 1 } : null);
     },
 
     buildOptions() {
