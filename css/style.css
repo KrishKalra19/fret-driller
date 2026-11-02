@@ -467,6 +467,11 @@ input[type="range"] { accent-color: var(--accent); width: 160px; height: 38px; }
   .pad { grid-template-columns: repeat(6, 1fr); }
 }
 
+/* On a small screen the wrapped header is too tall to stay pinned: it covers the fretboard. */
+@media (max-width: 760px), (max-height: 500px) {
+  header.top { position: static; }
+}
+
 /* ---------- jam: track row ---------- */
 .save-row { flex-basis: 100%; align-items: flex-end; }
 .save-row .field.grow { flex: 0 1 420px; }
