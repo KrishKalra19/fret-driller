@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Fret Driller</title>
-  <meta name="description" content="Drill the guitar fretboard: find notes, name notes, play note sequences and scale patterns.">
+  <meta name="description" content="A backing band in your browser: loop chord progressions and song forms with drums, bass and chords, call key changes live, and see the chord tones on the fretboard. Plus fretboard drills.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2303060c'/%3E%3Crect x='14.5' y='4' width='3' height='17' rx='1.5' fill='%233fb8ff'/%3E%3Crect x='13' y='21' width='6' height='7' rx='1' fill='%23a9b4c2'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Exo+2:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=19">
+  <link rel="stylesheet" href="css/style.css?v=20">
   <script>
     try { document.documentElement.dataset.side = (JSON.parse(localStorage.getItem('fretdriller.v1')) || {}).settings.side || 'jedi'; }
     catch (e) { document.documentElement.dataset.side = 'jedi'; }
@@ -19,23 +19,11 @@
   <canvas id="stars" aria-hidden="true"></canvas>
   <div id="toasts" class="toasts" aria-live="polite"></div>
   <header class="top">
-    <a class="brand" href="#explore" aria-label="Fret Driller home"><span class="logo" aria-hidden="true"><i></i></span><span>Fret Driller</span></a>
+    <a class="brand" href="#jam" aria-label="Fret Driller home"><span class="logo" aria-hidden="true"><i></i></span><span>Fret Driller</span></a>
     <nav class="tabs" id="tabs">
-      <div class="nav-group">
-        <span class="nav-label">Learn</span>
-        <button data-tab="explore">Fretboard map</button>
-      </div>
-      <div class="nav-group">
-        <span class="nav-label">Drill</span>
-        <button data-tab="find">Find the note</button>
-        <button data-tab="name">Name the note</button>
-        <button data-tab="sequence">Sequences</button>
-        <button data-tab="scales">Scale patterns</button>
-      </div>
-      <div class="nav-group">
-        <span class="nav-label">Play</span>
-        <button data-tab="jam">Jam</button>
-      </div>
+      <button data-tab="jam">Jam</button>
+      <button data-tab="explore">Fretboard map</button>
+      <button data-tab="practice">Practice</button>
     </nav>
     <div class="top-right">
       <div class="rank" id="rank"></div>
@@ -47,13 +35,19 @@
         <button data-side="jedi">Jedi</button>
         <button data-side="sith">Sith</button>
       </div>
-      <button class="icon-btn" data-tab="stats" title="Stats" aria-label="Stats"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button>
       <button class="icon-btn" data-tab="settings" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></button>
     </div>
   </header>
   <div id="qotd" class="qotd" hidden></div>
 
   <main>
+    <nav class="subtabs" id="practice-nav" aria-label="Practice" hidden>
+      <button data-tab="find">Find the note</button>
+      <button data-tab="name">Name the note</button>
+      <button data-tab="sequence">Sequences</button>
+      <button data-tab="scales">Scale patterns</button>
+      <button data-tab="stats">Stats</button>
+    </nav>
     <section id="drill-view" class="view">
       <div class="prompt-row">
         <div class="prompt" aria-live="polite">
@@ -79,19 +73,19 @@
     <section id="settings-view" class="view" hidden></section>
   </main>
 
-  <script src="js/theory.js?v=19"></script>
-  <script src="js/store.js?v=19"></script>
-  <script src="js/audio.js?v=19"></script>
-  <script src="js/fretboard.js?v=19"></script>
-  <script src="js/ui.js?v=19"></script>
-  <script src="js/drills.js?v=19"></script>
-  <script src="js/views.js?v=19"></script>
-  <script src="js/chords.js?v=19"></script>
-  <script src="js/explore.js?v=19"></script>
-  <script src="js/backing.js?v=19"></script>
-  <script src="js/jam.js?v=19"></script>
-  <script src="js/theme.js?v=19"></script>
-  <script src="js/app.js?v=19"></script>
-  <script src="js/quotes.js?v=19"></script>
+  <script src="js/theory.js?v=20"></script>
+  <script src="js/store.js?v=20"></script>
+  <script src="js/audio.js?v=20"></script>
+  <script src="js/fretboard.js?v=20"></script>
+  <script src="js/ui.js?v=20"></script>
+  <script src="js/drills.js?v=20"></script>
+  <script src="js/views.js?v=20"></script>
+  <script src="js/chords.js?v=20"></script>
+  <script src="js/explore.js?v=20"></script>
+  <script src="js/backing.js?v=20"></script>
+  <script src="js/jam.js?v=20"></script>
+  <script src="js/theme.js?v=20"></script>
+  <script src="js/app.js?v=20"></script>
+  <script src="js/quotes.js?v=20"></script>
 </body>
 </html>

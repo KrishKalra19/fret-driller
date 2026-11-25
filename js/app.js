@@ -4,6 +4,10 @@
   const $ = id => document.getElementById(id);
   const board = new FD.Fretboard($('board'));
   const PAGES = ['explore', 'jam', 'stats', 'settings'];
+  // Jam is the main page; the drills and their stats live together under Practice.
+  const PRACTICE = ['find', 'name', 'sequence', 'scales', 'stats'];
+  const nav = S.opts('nav', { practice: 'find' });
+  if (!PRACTICE.includes(nav.practice)) nav.practice = 'find';
   let current = null;
   let currentPage = null;
   let currentTab = null;
@@ -35,15 +39,20 @@
   UI.hud.el = $('hud');
 
   function show(tab) {
-    if (!FD.drills[tab] && !PAGES.includes(tab)) tab = 'explore';
+    if (tab === 'practice') tab = nav.practice;
+    if (!FD.drills[tab] && !PAGES.includes(tab)) tab = 'jam';
     currentTab = tab;
+    const inPractice = PRACTICE.includes(tab);
+    if (inPractice && nav.practice !== tab) { nav.practice = tab; S.saveOpts(); }
+    document.body.dataset.area = inPractice ? 'practice' : tab;
+    $('practice-nav').hidden = !inPractice;
     document.querySelectorAll('#inst button').forEach(b => b.classList.toggle('active', b.dataset.inst === S.instrument()));
     if (current && current.unmount) current.unmount();
     if (currentPage && currentPage.unmount) currentPage.unmount();
     current = null;
     currentPage = null;
     board.onCell = null;
-    document.querySelectorAll('button[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('button[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab || (b.dataset.tab === 'practice' && inPractice)));
     FD.theme.renderRank();
     const drill = FD.drills[tab];
     $('drill-view').hidden = !drill;

@@ -46,7 +46,7 @@ test('double flats survive toText and transposeText', () => {
   const back = C.parseProgression(text);
   assert.equal(back.error, undefined);
   assert.equal(C.transposeText('Ebb7:2', 1), 'Eb7:2');
-  assert.equal(C.transposeText('F##m', 1), 'Abm');
+  assert.equal(C.transposeText('F##m', 1), 'G#m');
 });
 
 test('a preset that cannot be read reports an error instead of crashing the page', () => {
@@ -270,4 +270,242 @@ test('a typed-in track that stops parsing falls back to the last good one', () =
   assert.deepEqual(plain(j.timeline(0, 4).segs.map(s => s.chord.symbol)), ['Am', 'F']);
   const fresh = page({ track: 'custom', custom: 'Zz' });
   assert.deepEqual(plain(fresh.timeline(0, 4).segs.map(s => s.chord.symbol)), ['C', 'D7', 'G7', 'C']);
+});
+
+// ---------------------------------------------------------------- song forms
+const J = FD.jamCalls;
+const syms = items => plain(items.map(it => it.chord.symbol));
+const formOf = str => {
+  const f = C.parseForm(str);
+  assert.equal(f.error, undefined, str);
+  return plain(f.sections.map(s => `${s.name}${s.shift ? (s.shift > 0 ? '+' : '') + s.shift : ''}: ${syms(s.items).join(' ')}`));
+};
+const chordsOf = tl => plain(tl.segs.map(s => s.chord.symbol));
+
+test('song form: sections play in order, and +n moves a section from the chords as written', () => {
+  assert.deepEqual(formOf('[Verse] Am F C G | [Chorus] F G Am Am | [Chorus +2] F G Am Am'),
+    ['Verse: Am F C G', 'Chorus: F G Am Am', 'Chorus+2: G A Bm Bm']);
+  assert.deepEqual(formOf('[A] C:2 G7:2 [B -1] F'), ['A: C G7', 'B-1: E']);
+  assert.deepEqual(plain(C.parseForm('[A] C:2 G7:2').sections[0].items.map(i => i.beats)), [2, 2]);
+  assert.equal(C.parseForm('[Verse] C [Chorus] F').hasSections, true);
+  assert.equal(C.parseForm('C D7 G7 C').hasSections, false);
+  assert.deepEqual(formOf('C D7 G7 C'), [': C D7 G7 C']);
+  assert.deepEqual(formOf('Am F [Out] E7'), [': Am F', 'Out: E7'], 'chords before the first tag are their own section');
+  assert.deepEqual(formOf('[Big Finish + 3]C'), ['Big Finish+3: E♭'], 'spaces inside a tag are fine');
+});
+
+test('song form: a tag with no chords repeats the last section of that name, with its own shift', () => {
+  assert.deepEqual(formOf('[Verse] Am F C G [Chorus] F G Am Am [Chorus +2]'),
+    ['Verse: Am F C G', 'Chorus: F G Am Am', 'Chorus+2: G A Bm Bm']);
+  assert.deepEqual(formOf('[Verse +5] C G [verse]'), ['Verse+5: F C', 'verse: C G'], 'measured from what was written, any case');
+  assert.deepEqual(formOf('[A] C [A] D [A -2]'), ['A: C', 'A: D', 'A-2: C'], 'the latest A is the one repeated');
+});
+
+test('song form: mistakes get a message, not a crash', () => {
+  assert.match(C.parseForm('[Bridge] [Verse] C').error, /\[Bridge\] has no chords/);
+  assert.match(C.parseForm('[Verse] C [Chorus +2]').error, /no earlier \[Chorus\]/);
+  assert.match(C.parseForm('[Verse C G').error, /closing \]/);
+  assert.match(C.parseForm('[Up +12] C').error, /11 semitones/);
+  assert.match(C.parseForm('[Verse] C Zz').error, /"Zz"/);
+  assert.match(C.parseForm('').error, /at least one chord/);
+  assert.match(C.parseForm('[+2]').error, /has no chords/);
+});
+
+test('transposing a song form moves the chords and leaves the tags and layout alone', () => {
+  assert.equal(C.transposeText('[Verse] Am F | [Chorus +2] G:2, C', 2), '[Verse] Bm G | [Chorus +2] A:2, D');
+  assert.equal(C.transposeText('[Chorus]', 5), '[Chorus]');
+  const up = C.parseForm(C.transposeText('[V] Am F [C +2] F G [V]', 3));
+  assert.deepEqual(plain(up.sections.map(s => syms(s.items).join(' '))), ['Cm A♭', 'B♭ C', 'Cm A♭']);
+});
+
+test('the jam page plays a song form as one loop, labelling each section and its key', () => {
+  const j = page({ custom: '[Verse] Am F C G [Chorus +2] F G Am Am' });
+  const tl = j.timeline(0, 4);
+  assert.deepEqual(chordsOf(tl), ['Am', 'F', 'C', 'G', 'G', 'A', 'Bm', 'Bm']);
+  assert.deepEqual(plain(tl.segs.map(s => s.section.name)), ['Verse', 'Verse', 'Verse', 'Verse', 'Chorus', 'Chorus', 'Chorus', 'Chorus']);
+  assert.equal(tl.segs[0].keyLabel, 'Key of A minor');
+  assert.equal(tl.segs[4].keyLabel, 'Key of B minor');
+  assert.deepEqual(chordsOf(j.timeline(3, 4)), chordsOf(tl), 'and loops');
+});
+
+test('a saved track keeps its song form text exactly', () => {
+  const text = '[Verse] Am F C G | [Chorus] F G Am Am | [Chorus +2]';
+  const j = page({ custom: text, groove: 'rock', bpm: 100, sound: 'keys' });
+  j.changed = () => {};
+  j.saveTrack('Gig opener');
+  assert.equal(j.o.saved[0].prog, text);
+  assert.equal(j.o.custom, text);
+});
+
+test('the up-a-whole-step key cycle moves 2 semitones each time', () => {
+  const j = page({ track: 'p:axis', key: 0, cycle: 'whole', cycleEvery: 2 });
+  const roots = [0, 1, 2, 3, 4, 12].map(l => j.timeline(l, 4).segs[0].chord.root);
+  assert.deepEqual(plain(roots), [0, 0, 2, 2, 4, 0]);
+  assert.equal(j.timeline(2, 4).keyLabel, 'Key of D');
+});
+
+// ---------------------------------------------------------------- called key changes: where they land
+// A timeline as the engine holds it: segs with starts, and total beats.
+const withStarts = tl => {
+  let start = 0;
+  const segs = tl.segs.map(s => { const x = { ...s, start }; start += s.beats; return x; });
+  return { ...tl, segs, beats: start };
+};
+
+test('a call lands on the next section, loop, bar or chord, never before the band can change', () => {
+  // Verse: Am F (4 beats each). Chorus: C:2 G:2 E7:8. Sections start at 0 and 8; chords at 0 4 8 10 12; 20 beats.
+  const j = page({ custom: '[Verse] Am F [Chorus] C:2 G:2 E7:8' });
+  const tl = withStarts(j.timeline(0, 4));
+  assert.equal(tl.beats, 20);
+  const at = (beat, mode) => plain(J.landing(tl, { loop: 3, beat }, mode, 4));
+  assert.deepEqual(at(0, 'section'), { loop: 3, beat: 0 }, 'the top of a loop that has not started is fine');
+  assert.deepEqual(at(1, 'section'), { loop: 3, beat: 8 });
+  assert.deepEqual(at(9, 'section'), { loop: 4, beat: 0 });
+  assert.deepEqual(at(1, 'loop'), { loop: 4, beat: 0 });
+  assert.deepEqual(at(0, 'loop'), { loop: 3, beat: 0 });
+  assert.deepEqual(at(5, 'bar'), { loop: 3, beat: 8 });
+  assert.deepEqual(at(13, 'bar'), { loop: 3, beat: 16 }, 'bar lines inside a long chord count');
+  assert.deepEqual(at(17, 'bar'), { loop: 4, beat: 0 });
+  assert.deepEqual(at(9, 'chord'), { loop: 3, beat: 10 });
+  assert.deepEqual(at(11, 'chord'), { loop: 3, beat: 12 });
+  assert.deepEqual(at(13, 'chord'), { loop: 4, beat: 0 });
+  // Without sections, "next section" is the next loop.
+  const one = withStarts(page({ custom: 'C F G C' }).timeline(0, 4));
+  assert.deepEqual(plain(J.landing(one, { loop: 0, beat: 5 }, 'section', 4)), { loop: 1, beat: 0 });
+  assert.deepEqual(plain(J.landing(null, { loop: 2, beat: 3 }, 'bar', 4)), { loop: 3, beat: 0 });
+});
+
+test('the countdown counts beats to the landing point, across the loop boundary and from the count-in', () => {
+  const lens = () => 16;
+  assert.equal(J.beatsUntil({ loop: 2, beat: 4 }, { loop: 2, beat: 8 }, lens), 4);
+  assert.equal(J.beatsUntil({ loop: 2, beat: 12 }, { loop: 3, beat: 0 }, lens), 4);
+  assert.equal(J.beatsUntil({ loop: 2, beat: 15 }, { loop: 4, beat: 2 }, lens), 19);
+  assert.equal(J.beatsUntil({ loop: 2, beat: 8 }, { loop: 2, beat: 8 }, lens), 0);
+  assert.equal(J.beatsUntil({ loop: 0, beat: -4 }, { loop: 0, beat: 0 }, lens), 4, 'from the first count-in beat');
+  assert.equal(J.untilText(8, 4), 'in 2 bars');
+  assert.equal(J.untilText(5, 4), 'in 2 bars');
+  assert.equal(J.untilText(4, 4), 'in 4 beats');
+  assert.equal(J.untilText(1, 4), 'in 1 beat');
+  assert.equal(J.untilText(0, 4), 'now');
+});
+
+// ---------------------------------------------------------------- called key changes: what the band plays
+test('a call at the top of a loop moves that loop and the ones after, not the one before', () => {
+  const j = page({ track: 'p:axis', key: 0 });
+  j.calls = [{ at: { loop: 1, beat: 0 }, shift: 2, rel: false }];
+  assert.deepEqual(chordsOf(j.timeline(0, 4)), ['C', 'G', 'Am', 'F']);
+  assert.deepEqual(chordsOf(j.timeline(1, 4)), ['D', 'A', 'Bm', 'G']);
+  assert.deepEqual(chordsOf(j.timeline(5, 4)), ['D', 'A', 'Bm', 'G']);
+  assert.equal(j.timeline(1, 4).keyLabel, 'Key of D');
+});
+
+test('a call landing mid-loop changes key from that beat, splitting a long chord at the bar line', () => {
+  const j = page({ custom: 'C:8 F G' });
+  j.calls = [{ at: { loop: 0, beat: 4 }, shift: 5, rel: false }];
+  const tl = j.timeline(0, 4);
+  assert.deepEqual(plain(tl.segs.map(s => [s.chord.symbol, s.beats])), [['C', 4], ['F', 4], ['B♭', 4], ['C', 4]]);
+  assert.deepEqual(plain(tl.segs.map(s => s.keyLabel)), ['Key of C', 'Key of F', 'Key of F', 'Key of F']);
+  assert.equal(tl.segs.reduce((a, s) => a + s.beats, 0), 16, 'the loop keeps its length');
+});
+
+test('calls stack on top of a key cycle', () => {
+  const j = page({ track: 'p:axis', key: 0, cycle: 'half' });
+  j.calls = [{ at: { loop: 1, beat: 0 }, shift: 2 + 5, rel: false }];
+  assert.equal(j.timeline(1, 4).segs[0].chord.root, (1 + 7) % 12);
+  assert.equal(j.timeline(2, 4).segs[0].chord.root, (2 + 7) % 12);
+});
+
+test('R switches to the relative key by starting the loop on the new home chord, and back', () => {
+  const j = page({ track: 'p:axis', key: 0 });
+  j.calls = [{ at: { loop: 1, beat: 0 }, shift: 0, rel: true }];
+  assert.deepEqual(chordsOf(j.timeline(1, 4)), ['Am', 'F', 'C', 'G']);
+  assert.equal(j.timeline(1, 4).keyLabel, 'Key of A minor');
+  j.calls.push({ at: { loop: 2, beat: 0 }, shift: 0, rel: true });
+  assert.deepEqual(chordsOf(j.timeline(2, 4)), ['C', 'G', 'Am', 'F']);
+  assert.equal(j.timeline(2, 4).keyLabel, 'Key of C');
+});
+
+test('R goes from minor to the relative major, on typed-in loops too', () => {
+  const typed = page({ custom: 'Am Dm G C' });
+  assert.equal(typed.timeline(0, 4).keyLabel, 'Key of A minor');
+  typed.calls = [{ at: { loop: 1, beat: 0 }, shift: 0, rel: true }];
+  assert.deepEqual(chordsOf(typed.timeline(1, 4)), ['C', 'Am', 'Dm', 'G']);
+  assert.equal(typed.timeline(1, 4).keyLabel, 'Key of C');
+  // With a whole step stacked on: up to D, home on D.
+  typed.calls[0].shift = 2;
+  assert.deepEqual(chordsOf(typed.timeline(1, 4)), ['D', 'Bm', 'Em', 'A']);
+});
+
+test('R landing mid-loop ends that loop there, so the next starts on the new home chord', () => {
+  const j = page({ track: 'p:axis', key: 0 });
+  j.calls = [{ at: { loop: 0, beat: 8 }, shift: 0, rel: true }];
+  assert.deepEqual(chordsOf(j.timeline(0, 4)), ['C', 'G']);
+  assert.deepEqual(chordsOf(j.timeline(1, 4)), ['Am', 'F', 'C', 'G']);
+});
+
+// The page's call() with the band faked as playing at a given position.
+function playing(j, pos, run) {
+  const B = FD.backing;
+  const saved = { isPlaying: B.isPlaying, position: B.position, timelineAt: B.timelineAt, refresh: B.refresh, stop: B.stop };
+  B.isPlaying = () => true;
+  B.position = () => pos;
+  B.timelineAt = i => withStarts(j.timeline(i, 4));
+  B.refresh = () => {};
+  j.render = () => {};
+  j.calls = j.calls || [];
+  try { run(); } finally { Object.assign(B, saved); }
+}
+
+test('call(): presses before the landing stack onto one change, and cancelling clears it', () => {
+  const j = page({ track: 'p:axis', key: 0, landOn: 'loop' });
+  playing(j, { loop: 0, beat: 5 }, () => {
+    j.call(2, false);
+    j.call(2, false);
+    assert.deepEqual(plain(j.calls), [{ at: { loop: 1, beat: 0 }, shift: 4, rel: false }]);
+    j.call(-4, false);
+    assert.deepEqual(plain(j.calls), [], 'calls that add up to nothing disappear');
+    j.call(5, false);
+    assert.equal(j.cancelCalls(), true);
+    assert.deepEqual(plain(j.calls), []);
+    assert.equal(j.cancelCalls(), false, 'nothing left to cancel');
+  });
+});
+
+test('call(): the landing follows the setting, and a call already playing cannot be cancelled', () => {
+  const j = page({ custom: '[A] C F [B] G Am', landOn: 'section' });
+  playing(j, { loop: 0, beat: 1 }, () => j.call(2, false));
+  assert.deepEqual(plain(j.calls[0].at), { loop: 0, beat: 8 });
+  j.o.landOn = 'chord';
+  playing(j, { loop: 0, beat: 9 }, () => {
+    j.call(5, false);
+    assert.deepEqual(plain(j.calls.map(c => c.at)), [{ loop: 0, beat: 8 }, { loop: 0, beat: 12 }]);
+    j.cancelCalls();
+    assert.deepEqual(plain(j.calls.map(c => c.at)), [{ loop: 0, beat: 8 }], 'the one already sounding stays');
+  });
+});
+
+test('call(): R is refused on a song form and on a track with no relative chord', () => {
+  const form = page({ custom: '[A] C G Am F [B] F G' });
+  playing(form, { loop: 0, beat: 1 }, () => form.call(0, true));
+  assert.deepEqual(plain(form.calls), []);
+  const noRel = page({ custom: 'C F G C' });
+  playing(noRel, { loop: 0, beat: 1 }, () => noRel.call(0, true));
+  assert.deepEqual(plain(noRel.calls), []);
+  const ok = page({ custom: 'C G Am F' });
+  playing(ok, { loop: 0, beat: 1 }, () => ok.call(0, true));
+  assert.equal(ok.calls.length, 1);
+});
+
+test('stopping keeps the key the band ended in and drops calls still waiting', () => {
+  const j = page({ track: 'p:axis', key: 0 });
+  playing(j, { loop: 2, beat: 4 }, () => {
+    j.calls = [{ at: { loop: 1, beat: 0 }, shift: 2, rel: false }, { at: { loop: 3, beat: 0 }, shift: 5, rel: false }];
+    j.view = { loop: 2, beatInLoop: 3 };
+    j.changed = () => {};
+    j.syncPlayBtn = () => {};
+    FD.backing.stop = () => {};
+    j.toggle();
+  });
+  assert.equal(j.o.key, 2, 'the whole step that landed stays');
+  assert.deepEqual(plain(j.calls), []);
 });

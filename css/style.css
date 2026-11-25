@@ -95,6 +95,15 @@ header.top {
   border-color: color-mix(in srgb, var(--accent) 60%, transparent);
   box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 35%, transparent), inset 0 0 10px color-mix(in srgb, var(--accent) 15%, transparent);
 }
+/* The drill rank only means something on the Practice pages. */
+body:not([data-area="practice"]) .rank { display: none; }
+.subtabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 0 0 18px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.subtabs button {
+  background: none; border: 1px solid transparent; color: var(--muted);
+  padding: 6px 11px; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.subtabs button:hover { color: var(--text); background: var(--panel); }
+.subtabs button.active { color: var(--text); background: var(--panel-2); border-color: var(--line-strong); }
 .top-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .icon-btn {
   width: 36px; height: 36px; display: inline-grid; place-items: center; cursor: pointer;
@@ -481,3 +490,56 @@ input[type="range"] { accent-color: var(--accent); width: 160px; height: 38px; }
 .save-row { flex-basis: 100%; align-items: flex-end; }
 .save-row .field.grow { flex: 0 1 420px; }
 .jam-label #jam-key { color: var(--text); }
+
+/* ---------- jam: live controls ---------- */
+.jam-panel details.fold { border-top: 1px solid var(--line); padding-top: 12px; }
+.jam-panel details.fold > summary {
+  cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 8px;
+  font: 700 11px/1.4 Orbitron, sans-serif; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted);
+}
+.jam-panel details.fold > summary::-webkit-details-marker { display: none; }
+.jam-panel details.fold > summary::before { content: "▸"; font-size: 12px; transition: transform 0.15s; }
+.jam-panel details.fold[open] > summary::before { transform: rotate(90deg); }
+.jam-panel details.fold > summary:hover { color: var(--text); }
+.jam-panel details.fold > .options, .jam-panel details.fold > .hint { margin-top: 12px; }
+.jam-panel .hint p { margin: 0 0 8px; }
+.jam-panel .options + .options { padding-top: 0; border-top: 0; }
+.mutes { gap: 4px; }
+.btn.mute-btn.muted { color: var(--bad); border-color: var(--bad); text-decoration: line-through; background: color-mix(in srgb, var(--bad) 12%, transparent); }
+
+.jam-section { font: 700 15px/1.2 Orbitron, sans-serif; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-2); margin-bottom: 6px; }
+.jam-prog .sec-tag {
+  align-self: center; font: 700 10px/1 Orbitron, sans-serif; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--accent-2); margin: 0 2px 0 8px;
+}
+.jam-prog .sec-tag:first-child { margin-left: 0; }
+.jam-call {
+  display: flex; align-items: baseline; gap: 6px 16px; flex-wrap: wrap;
+  margin: 0 0 14px; padding: 10px 16px; border-radius: var(--radius);
+  border: 1px solid var(--accent-2); background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent-2) 30%, transparent);
+}
+.jam-call[hidden] { display: none; }
+.jam-call b { font: 900 26px/1.1 Orbitron, sans-serif; color: var(--text); }
+.jam-call span { font: 700 18px/1.2 Orbitron, sans-serif; color: var(--accent-2); }
+.jam-call small { color: var(--muted); margin-left: auto; }
+
+/* Big screen: full screen, controls hidden, the chords readable from across a room. */
+body.stage header.top, body.stage .qotd, body.stage #practice-nav, body.stage .jam-panel, body.stage #jam-legend,
+body.stage #jam-time, body.stage #jam-msg:empty { display: none; }
+body.stage main { max-width: none; padding: 2vh 3vw; }
+body.stage .jam-top { align-items: center; }
+body.stage .jam-section { font-size: clamp(20px, 3.4vw, 54px); }
+body.stage .jam-label { font-size: clamp(14px, 2.2vw, 34px); }
+body.stage .jam-chord { font-size: clamp(90px, 19vw, 320px); margin: 1vh 0 2vh; }
+body.stage .jam-tones .ct-chip { font-size: clamp(14px, 1.6vw, 26px); }
+body.stage .jam-next { font-size: clamp(16px, 2vw, 32px); }
+body.stage .jam-next b { display: block; margin: 8px 0 0; font-size: clamp(48px, 9vw, 150px); text-align: right; }
+body.stage .beats { gap: clamp(10px, 1.4vw, 24px); }
+body.stage .beats i { width: clamp(18px, 2.4vw, 42px); height: clamp(18px, 2.4vw, 42px); }
+body.stage .jam-bar { font-size: clamp(13px, 1.4vw, 22px); }
+body.stage .jam-call { padding: 1.6vh 2vw; }
+body.stage .jam-call b { font-size: clamp(30px, 6vw, 110px); }
+body.stage .jam-call span { font-size: clamp(22px, 3.6vw, 64px); }
+body.stage .jam-prog .chip { font-size: clamp(17px, 1.8vw, 30px); }
+@media (max-width: 760px) { body.stage .jam-next b { text-align: left; } }

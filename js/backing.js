@@ -95,7 +95,7 @@ FD.backing = (() => {
 
   let ac = null, master = null, bus = null, parts = null, noise = null;
   let timer = null, playing = false;
-  let cfg = { bpm: 100, groove: 'rock', countIn: true, sound: 'keys', vol: { drums: 0.8, bass: 0.8, chords: 0.6 }, loopTimeline: null };
+  let cfg = { bpm: 100, groove: 'rock', countIn: true, sound: 'keys', vol: { drums: 0.8, bass: 0.8, chords: 0.6 }, mute: {}, loopTimeline: null };
   let nextTime = 0, sub = 0, beatInLoop = 0, loopIdx = 0, counting = false, countBeat = 0;
   const loops = new Map();
   const queue = [];
@@ -103,7 +103,8 @@ FD.backing = (() => {
   const groove = () => GROOVES[cfg.groove] || GROOVES.rock;
   const beatDur = () => 60 / cfg.bpm;
 
-  // Timeline for loop i: { segs: [{ chord, beats, start }], beats, keyLabel }.
+  // Timeline for loop i: { segs: [{ chord, beats, start, keyLabel?, section? }], beats, keyLabel }.
+  // A seg's own keyLabel wins over the loop's, so the key can change partway through a loop.
   function loop(i) {
     if (!loops.has(i)) {
       const d = cfg.loopTimeline(i, groove().beats);
@@ -313,7 +314,8 @@ FD.backing = (() => {
     if (sub === 0) {
       queue.push({
         t, kind: 'beat', loop: loopIdx, si, chord, next, beatInChord, chordBeats: seg.beats,
-        beatInLoop, loopBeats: d.beats, bpb: g.beats, keyLabel: d.keyLabel, segs: d.segs,
+        beatInLoop, loopBeats: d.beats, bpb: g.beats, keyLabel: seg.keyLabel || d.keyLabel, segs: d.segs,
+        section: seg.section, nextSeg: si + 1 < d.segs.length ? d.segs[si + 1] : loop(loopIdx + 1).segs[0],
       });
     }
 
@@ -367,12 +369,13 @@ FD.backing = (() => {
 
   function applyVolumes() {
     if (!parts) return;
-    for (const k of ['drums', 'bass', 'chords']) parts[k].gain.value = cfg.vol[k];
+    // A mute silences a part without touching its volume, so unmuting brings the slider's level back.
+    for (const k of ['drums', 'bass', 'chords']) parts[k].gain.value = cfg.mute[k] ? 0 : cfg.vol[k];
   }
 
   function configure(next) {
     const regroove = next.groove && next.groove !== cfg.groove;
-    cfg = { ...cfg, ...next, vol: { ...cfg.vol, ...(next.vol || {}) } };
+    cfg = { ...cfg, ...next, vol: { ...cfg.vol, ...(next.vol || {}) }, mute: { ...cfg.mute, ...(next.mute || {}) } };
     applyVolumes();
     if (regroove) loops.clear();
   }
@@ -426,5 +429,18 @@ FD.backing = (() => {
     return out;
   }
 
-  return { GROOVES, SOUNDS, start, stop, configure, refresh, drain, isPlaying: () => playing };
+  // Where the scheduler is: the next step it will schedule. Anything before it is already on its way
+  // to the speakers and can't change; a key change can land at this beat at the earliest.
+  function position() {
+    if (!playing) return null;
+    if (counting) return { loop: 0, beat: 0, counting: true };
+    const beat = sub === 0 ? beatInLoop : beatInLoop + 1;
+    if (beat >= loop(loopIdx).beats) return { loop: loopIdx + 1, beat: 0, counting: false };
+    return { loop: loopIdx, beat, counting: false };
+  }
+
+  // The timeline the band is using for loop i (built on demand). Only while playing.
+  const timelineAt = i => (playing ? loop(i) : null);
+
+  return { GROOVES, SOUNDS, start, stop, configure, refresh, drain, position, timelineAt, isPlaying: () => playing };
 })();

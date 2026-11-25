@@ -225,19 +225,21 @@ test('Jam options: bad values are replaced, good ones kept', () => {
   const clean = o => { jam.clean(o); return plain(o); };
   const good = {
     track: 's:a', key: 7, custom: 'C G', bpm: 133, barsPerChord: 4, groove: 'funk', sound: 'organ', cycle: 'half', cycleEvery: 2,
-    lockFrom: 3, lockTo: 7, vol: { drums: 0.1, bass: 0, chords: 1 }, totalSec: 5,
+    landOn: 'bar', folds: { keys: true }, lockFrom: 3, lockTo: 7, vol: { drums: 0.1, bass: 0, chords: 1 }, totalSec: 5,
     saved: [{ id: 'a', name: 'Mine', prog: 'C G', groove: 'funk', bpm: 100, barsPerChord: 1, sound: 'keys' }],
   };
   assert.deepEqual(clean(JSON.parse(JSON.stringify(good))), good);
 
   const bad = clean({
     track: 5, key: 'x', custom: null, bpm: 'fast', barsPerChord: 0, groove: 'polka', sound: 'kazoo', cycle: 'spiral', cycleEvery: 0,
-    lockFrom: 'a', lockTo: null, vol: { drums: 'x', bass: null, chords: 9 }, totalSec: 'y', saved: 'none',
+    landOn: 'whenever', folds: [1], lockFrom: 'a', lockTo: null, vol: { drums: 'x', bass: null, chords: 9 }, totalSec: 'y', saved: 'none',
   });
   assert.equal(bad.track, 'p:myloop');
   assert.equal(bad.key, 0);
   assert.equal(bad.custom, 'C D7 G7 C');
   assert.equal(bad.bpm, 100);
+  assert.equal(bad.landOn, 'section');
+  assert.deepEqual(bad.folds, {});
   assert.equal(bad.barsPerChord, 1);
   assert.equal(bad.groove, 'rock');
   assert.equal(bad.sound, 'keys');

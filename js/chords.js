@@ -103,15 +103,69 @@ FD.chords = (() => {
     return { items };
   }
 
-  // Move every chord in a typed progression by some semitones, keeping each chord's suffix as written.
+  // A typed track is chords, optionally split into sections by tags: "[Verse] Am F C G [Chorus +2] F G".
+  // TOKEN finds the tags and the chord tokens; everything else (spaces, commas, |) is layout.
+  const TOKEN = /\[[^\]]*\]?|[^\s,|[\]]+/g;
+
+  // Move every chord in a typed progression by some semitones, keeping each chord's suffix, the
+  // section tags and the layout as written.
   function transposeText(str, semis) {
-    return String(str || '').trim().split(/[\s,|]+/).filter(Boolean).map(tok => {
+    return String(str || '').trim().replace(TOKEN, tok => {
+      if (tok[0] === '[') return tok;
       const [sym, dur] = tok.split(':');
       const c = parse(sym);
       if (!c) return tok;
       const suffix = sym.replace(/♯/g, '#').replace(/♭/g, 'b').replace(/^[A-Ga-g](#{1,2}|b{1,2})?/, '');
-      return MAJOR_KEYS[T.mod12(c.root + semis)] + suffix + (dur != null ? ':' + dur : '');
-    }).join(' ');
+      // Minor chords take minor-key spellings (C♯m, G♯m rather than D♭m, A♭m).
+      const names = ['min', 'min7', 'm6', 'm9', 'm7b5', 'dim', 'dim7'].includes(c.quality) ? MINOR_KEYS : MAJOR_KEYS;
+      return names[T.mod12(c.root + semis)] + suffix + (dur != null ? ':' + dur : '');
+    });
+  }
+
+  // "[Chorus +2]" -> { name: 'Chorus', shift: 2 }. The shift is measured from the chords as written.
+  function parseTag(tok) {
+    if (!tok.endsWith(']')) return { error: `The section tag "${tok}" needs a closing ].` };
+    const body = tok.slice(1, -1).trim();
+    const m = /^(.*?)\s*([+-]\s*\d{1,2})?$/.exec(body);
+    const shift = m[2] ? Number(m[2].replace(/\s/g, '')) : 0;
+    if (Math.abs(shift) > 11) return { error: `"${tok}": a section can move up or down 11 semitones at most.` };
+    return { name: m[1], shift };
+  }
+
+  // A typed track as a song form: { sections: [{ name, shift, items }] }, played in order and then looped.
+  // Text before the first tag is a section with no name. A tag with no chords after it repeats the last
+  // section of that name, moved by the new tag's shift: "[Verse] Am F [Chorus] C G [Verse +2]".
+  function parseForm(str) {
+    const toks = String(str || '').match(TOKEN) || [];
+    const raw = [];
+    for (const tok of toks) {
+      if (tok[0] === '[') {
+        const tag = parseTag(tok);
+        if (tag.error) return { error: tag.error };
+        raw.push({ name: tag.name, shift: tag.shift, tagged: true, chords: [] });
+      } else {
+        if (!raw.length) raw.push({ name: '', shift: 0, tagged: false, chords: [] });
+        raw[raw.length - 1].chords.push(tok);
+      }
+    }
+    const sections = [];
+    const written = new Map();
+    for (const sec of raw) {
+      const key = sec.name.toLowerCase();
+      let chords = sec.chords;
+      if (!chords.length) {
+        if (!sec.name || !written.has(key)) {
+          const label = `[${sec.name}${sec.shift ? (sec.shift > 0 ? ' +' : ' ') + sec.shift : ''}]`;
+          return { error: `${label} has no chords${sec.name ? ` and there's no earlier [${sec.name}] to repeat` : ''}.` };
+        }
+        chords = written.get(key);
+      } else if (sec.name) written.set(key, chords);
+      const r = parseProgression(transposeText(chords.join(' '), sec.shift));
+      if (r.error) return { error: r.error };
+      sections.push({ name: sec.name, shift: sec.shift, items: r.items });
+    }
+    if (!sections.length) return { error: 'Type at least one chord, e.g. C D7 G7 C' };
+    return { sections, hasSections: raw.some(s => s.tagged) };
   }
 
   // Plain chord symbols for parsed items (used to show a preset in the text box).
@@ -161,5 +215,5 @@ FD.chords = (() => {
     return parseProgression(preset.roman, { key: keyPc, minor: !!preset.minor });
   }
 
-  return { QUALITIES, PRESETS, MAJOR_KEYS, MINOR_KEYS, keyName, parse, parseRoman, parseProgression, transposeText, toText, presetProgression, toneFor };
+  return { QUALITIES, PRESETS, MAJOR_KEYS, MINOR_KEYS, keyName, parse, parseRoman, parseProgression, parseForm, transposeText, toText, presetProgression, toneFor };
 })();
