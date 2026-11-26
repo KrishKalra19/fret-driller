@@ -169,6 +169,19 @@ FD.backing = (() => {
 
   const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 
+  // Laptop and TV speakers barely play anything under ~150 Hz, and the bass notes sit at 65–130 Hz.
+  // So each note has two layers: the deep body (felt on real speakers) and a mid-range "presence"
+  // layer, high-passed and lightly driven, that carries the bass line on small speakers.
+  let drive = null;
+  function driveCurve() {
+    if (!drive) {
+      drive = new Float32Array(1024);
+      for (let i = 0; i < drive.length; i++) { const x = (i / (drive.length - 1)) * 2 - 1; drive[i] = Math.tanh(2.5 * x) / Math.tanh(2.5); }
+    }
+    return drive;
+  }
+  const PRESENCE = 1.4;
+
   function bassNote(t, midi, dur) {
     const o = ac.createOscillator(), sub = ac.createOscillator();
     o.type = 'sawtooth'; sub.type = 'sine';
@@ -185,7 +198,19 @@ FD.backing = (() => {
     const sg = ac.createGain();
     sg.gain.value = 0.7;
     o.connect(f); sub.connect(sg).connect(f);
-    f.connect(g).connect(parts.bass);
+    f.connect(g);
+
+    const hp = ac.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 200; hp.Q.value = 0.7;
+    const sat = ac.createWaveShaper();
+    sat.curve = driveCurve();
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 2200; lp.Q.value = 0.7;
+    const pg = ac.createGain();
+    pg.gain.value = PRESENCE;
+    o.connect(hp).connect(sat).connect(lp).connect(pg).connect(g);
+
+    g.connect(parts.bass);
     o.start(t); sub.start(t);
     o.stop(t + dur + 0.2); sub.stop(t + dur + 0.2);
   }
